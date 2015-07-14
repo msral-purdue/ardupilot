@@ -156,6 +156,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     if (ap.home_state == HOME_UNSET) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
         ahrs.get_NavEKF().resetHeightDatum();
+        Log_Write_Event(DATA_EKF_ALT_RESET);
     } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location();
@@ -478,6 +479,16 @@ bool Copter::pre_arm_checks(bool display_failure)
 #endif
 #endif
 
+    // check battery voltage
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
+        if (failsafe.battery || (!ap.usb_connected && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah))) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Battery"));
+            }
+            return false;
+        }
+    }
+
     // check various parameter values
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
 
@@ -525,6 +536,21 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
 #endif
+    }
+
+    // check throttle is above failsafe throttle
+    // this is near the bottom to allow other failures to be displayed before checking pilot throttle
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {
+        if (g.failsafe_throttle != FS_THR_DISABLED && channel_throttle->radio_in < g.failsafe_throttle_value) {
+            if (display_failure) {
+    #if FRAME_CONFIG == HELI_FRAME
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Collective below Failsafe"));
+    #else
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Throttle below Failsafe"));
+    #endif
+            }
+            return false;
+        }
     }
 
     // if we've gotten this far then pre arm checks have completed
@@ -701,11 +727,31 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
 
+#if AC_FENCE == ENABLED
+    // check vehicle is within fence
+    if(!fence.pre_arm_check()) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: check fence"));
+        }
+        return false;
+    }
+#endif
+
     // check lean angle
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > aparm.angle_max) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Leaning"));
+            }
+            return false;
+        }
+    }
+
+    // check battery voltage
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
+        if (failsafe.battery || (!ap.usb_connected && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah))) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Check Battery"));
             }
             return false;
         }
@@ -776,9 +822,6 @@ void Copter::init_disarm_motors()
     gcs_send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 #endif
 
-    // send disarm command to motors
-    motors.armed(false);
-
     // save compass offsets learned by the EKF
     Vector3f magOffsets;
     if (ahrs.use_compass() && ahrs.getMagOffsets(magOffsets)) {
@@ -794,11 +837,14 @@ void Copter::init_disarm_motors()
     set_land_complete(true);
     set_land_complete_maybe(true);
 
-    // reset the mission
-    mission.reset();
-
     // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);
+
+    // send disarm command to motors
+    motors.armed(false);
+
+    // reset the mission
+    mission.reset();
 
     // suspend logging
     if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {

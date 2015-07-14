@@ -662,7 +662,7 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
         return true;
     }
     if (auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
-        gcs_send_text_fmt(PSTR("Reached descent rate %.1f m/s"), auto_state.sink_rate);
+        gcs_send_text_fmt(PSTR("Reached descent rate %.1f m/s"), (double)auto_state.sink_rate);
         return true;        
     }
 
@@ -790,6 +790,7 @@ void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
     } else {
         ahrs.set_home(cmd.content.location);
         home_is_set = HOME_SET_NOT_LOCKED;
+        Log_Write_Home_And_Origin();
     }
 }
 

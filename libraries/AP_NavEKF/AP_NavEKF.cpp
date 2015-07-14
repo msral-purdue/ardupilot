@@ -1005,6 +1005,7 @@ void NavEKF::SelectFlowFusion()
         flowRadXY[0]        = 0.0f;
         flowRadXY[1]        = 0.0f;
         omegaAcrossFlowTime.zero();
+        flowDataValid = true;
     }
     // If the flow measurements have been rejected for too long and we are relying on them, then revert to constant position mode
     if ((flowSensorTimeout || flowFusionTimeout) && PV_AidingMode == AID_RELATIVE) {
@@ -2086,6 +2087,15 @@ void NavEKF::FuseVelPosNED()
             } else {
                 IMU1_weighting = 0.5f;
             }
+            // If either of the IMU's has experienced clipping within the last two filter time constants (approx 0.4 seconds) we apply a hard switch away from that sensor
+            // to the IMU with the lower
+            if (clipRateFilt1 > 0.1f || clipRateFilt2 > 0.1f) {
+                if (clipRateFilt1 > clipRateFilt2) {
+                    IMU1_weighting = 0.0f;
+                } else {
+                    IMU1_weighting = 1.0f;
+                }
+            }
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
             // calculate the test ratio
             velTestRatio = innovVelSumSq / (varVelSum * sq(_gpsVelInnovGate));
@@ -2223,13 +2233,29 @@ void NavEKF::FuseVelPosNED()
                         Kfusion[i] = 0.0f;
                     }
                 }
+
                 // Set the Kalman gain values for the single IMU states
-                Kfusion[22] = Kfusion[13]; // IMU2 Z accel bias
                 Kfusion[26] = Kfusion[9];  // IMU1 posD
                 Kfusion[30] = Kfusion[9];  // IMU2 posD
                 for (uint8_t i = 0; i<=2; i++) {
                     Kfusion[i+23] = Kfusion[i+4]; // IMU1 velNED
                     Kfusion[i+27] = Kfusion[i+4]; // IMU2 velNED
+                }
+                // Don't update Z accel bias values if we have clipping
+                // we achieve this by setting the corresponding Kalman gains to zero
+                if (clipRateFilt1 < 0.1f && clipRateFilt2 < 0.1f) {
+                    // no clipping
+                    Kfusion[22] = Kfusion[13];
+                } else if (clipRateFilt1 >0.1f && clipRateFilt2 > 0.1f) {
+                    // both clipping;
+                    Kfusion[22] = Kfusion[13] = 0.0f;
+                } else if (clipRateFilt1 > clipRateFilt2) {
+                    // IMU1 clipping
+                    Kfusion[22] = Kfusion[13];
+                    Kfusion[13] = 0.0f;
+                } else {
+                    // IMU2 clipping
+                    Kfusion[22] = 0.0f;
                 }
 
                 // Correct states that have been predicted using single (not blended) IMU data
@@ -2402,8 +2428,8 @@ void NavEKF::FuseMagnetometer()
             faultStatus.bad_xmag = false;
         } else {
             // the calculation is badly conditioned, so we cannot perform fusion on this step
-            // we increase the state variances and try again next time
-            P[19][19] += 0.1f*R_MAG;
+            // we reset the covariance matrix and try again next measurement
+            CovarianceInit();
             obsIndex = 1;
             faultStatus.bad_xmag = true;
             return;
@@ -2481,8 +2507,8 @@ void NavEKF::FuseMagnetometer()
             faultStatus.bad_ymag = false;
         } else {
             // the calculation is badly conditioned, so we cannot perform fusion on this step
-            // we increase the state variances and try again next time
-            P[20][20] += 0.1f*R_MAG;
+            // we reset the covariance matrix and try again next measurement
+            CovarianceInit();
             obsIndex = 2;
             faultStatus.bad_ymag = true;
             return;
@@ -2556,8 +2582,8 @@ void NavEKF::FuseMagnetometer()
             faultStatus.bad_zmag = false;
         } else {
             // the calculation is badly conditioned, so we cannot perform fusion on this step
-            // we increase the state variances and try again next time
-            P[21][21] += 0.1f*R_MAG;
+            // we reset the covariance matrix and try again next measurement
+            CovarianceInit();
             obsIndex = 3;
             faultStatus.bad_zmag = true;
             return;
@@ -4106,13 +4132,27 @@ void NavEKF::readIMUData()
 
     if (ins.get_accel_health(0) && ins.get_accel_health(1)) {
         // dual accel mode
+        // read IMU1 delta velocity data
         readDeltaVelocity(0, dVelIMU1, dtDelVel1);
+        // apply a peak hold decaying envelope filter to the rate of increase if clip events on IMU1
+        float alpha = 1.0f - 5.0f*dtDelVel1;
+        clipRateFilt1 = max(float(ins.get_accel_clip_count(0) - lastClipCount1), alpha*clipRateFilt1);
+        lastClipCount1 = ins.get_accel_clip_count(0);
+        // read IMU2 delta velocity data
         readDeltaVelocity(1, dVelIMU2, dtDelVel2);
+        // apply a peak hold decaying envelope filter to the rate of increase if clip events on IMU2
+        alpha = 1.0f - 5.0f*dtDelVel2;
+        clipRateFilt2 = max(float(ins.get_accel_clip_count(1) - lastClipCount2), alpha*clipRateFilt2);
+        lastClipCount2 = ins.get_accel_clip_count(1);
     } else {
         // single accel mode - one of the first two accelerometers are unhealthy
         // read primary accelerometer into dVelIMU1 and copy to dVelIMU2
         readDeltaVelocity(ins.get_primary_accel(), dVelIMU1, dtDelVel1);
-
+        // apply a peak hold decaying envelope filter to the rate of increase if clip events on IMU1
+        float alpha = 1.0f - 5.0f*dtDelVel1;
+        clipRateFilt1 = max(float(ins.get_accel_clip_count(0) - lastClipCount1), alpha*clipRateFilt1);
+        lastClipCount1 = ins.get_accel_clip_count(0);
+        clipRateFilt2 = clipRateFilt1;
         dtDelVel2 = dtDelVel1;
         dVelIMU2 = dVelIMU1;
     }
@@ -4688,6 +4728,9 @@ void NavEKF::InitialiseVariables()
     yawRateFilt = 0.0f;
     yawResetAngle = 0.0f;
     yawResetAngleWaiting = false;
+    const AP_InertialSensor &ins = _ahrs->get_ins();
+    lastClipCount1 = ins.get_accel_clip_count(0);
+    lastClipCount2 = ins.get_accel_clip_count(1);
 }
 
 // return true if we should use the airspeed sensor

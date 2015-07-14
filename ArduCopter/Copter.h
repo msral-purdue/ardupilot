@@ -80,7 +80,7 @@
 #include <AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
-#include <AC_WPNav.h>     		// ArduCopter waypoint navigation library
+#include <AC_WPNav.h>           // ArduCopter waypoint navigation library
 #include <AC_Circle.h>          // circle navigation library
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AC_Fence.h>           // Arducopter Fence library
@@ -95,10 +95,10 @@
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
 #if EPM_ENABLED == ENABLED
-#include <AP_EPM.h>				// EPM cargo gripper stuff
+#include <AP_EPM.h>             // EPM cargo gripper stuff
 #endif
 #if PARACHUTE == ENABLED
-#include <AP_Parachute.h>		// Parachute release library
+#include <AP_Parachute.h>       // Parachute release library
 #endif
 #include <AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain.h>
@@ -270,6 +270,12 @@ private:
 
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
     } failsafe;
+
+    // sensor health for logging
+    struct {
+        uint8_t baro        : 1;    // true if baro is healthy
+        uint8_t compass     : 1;    // true if compass is healthy
+    } sensor_health;
 
     // Motor Output
 #if FRAME_CONFIG == QUAD_FRAME
@@ -597,6 +603,8 @@ private:
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Baro(void);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
+    void Log_Write_Home_And_Origin();
+    void Log_Sensor_Health();
 #if FRAME_CONFIG == HELI_FRAME
     void Log_Write_Heli(void);
 #endif

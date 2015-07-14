@@ -24,7 +24,7 @@ void LR_MsgHandler::wait_timestamp(uint32_t timestamp)
 void LR_MsgHandler::wait_timestamp_from_msg(uint8_t *msg)
 {
     uint64_t time_us;
-    uint64_t time_ms;
+    uint32_t time_ms;
 
     if (field_value(msg, "TimeUS", time_us)) {
         // 64-bit timestamp present - great!
@@ -154,12 +154,17 @@ void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *ms
         ! field_value(msg, "HDp", hdop)) {
         hdop = 20;
     }
+    uint8_t nsats = 0;
+    if (! field_value(msg, "NSats", nsats) &&
+        ! field_value(msg, "numSV", nsats)) {
+        field_not_found(msg, "NSats");
+    }
     gps.setHIL(gps_offset,
                (AP_GPS::GPS_Status)status,
                uint32_t(time_us/1000),
                loc,
                vel,
-               require_field_uint8_t(msg, "NSats"),
+               nsats,
                hdop,
                require_field_float(msg, "VZ") != 0);
     if (status == AP_GPS::GPS_OK_FIX_3D && ground_alt_cm == 0) {
@@ -333,7 +338,7 @@ bool LR_MsgHandler::set_parameter(const char *name, float value)
     const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_USE", 
                                    "COMPASS_ORIENT", "COMPASS_ORIENT2",
                                    "COMPASS_ORIENT3"};
-    for (uint8_t i=0; i<sizeof(ignore_parms)/sizeof(ignore_parms[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(ignore_parms); i++) {
         if (strncmp(name, ignore_parms[i], AP_MAX_NAME_SIZE) == 0) {
             ::printf("Ignoring set of %s to %f\n", name, value);
             return true;
@@ -344,21 +349,25 @@ bool LR_MsgHandler::set_parameter(const char *name, float value)
     if (vp == NULL) {
         return false;
     }
+    float old_value = 0;
     if (var_type == AP_PARAM_FLOAT) {
+        old_value = ((AP_Float *)vp)->cast_to_float();
         ((AP_Float *)vp)->set(value);
-        ::printf("Set %s to %f\n", name, value);
     } else if (var_type == AP_PARAM_INT32) {
+        old_value = ((AP_Int32 *)vp)->cast_to_float();
         ((AP_Int32 *)vp)->set(value);
-        ::printf("Set %s to %d\n", name, (int)value);
     } else if (var_type == AP_PARAM_INT16) {
+        old_value = ((AP_Int16 *)vp)->cast_to_float();
         ((AP_Int16 *)vp)->set(value);
-        ::printf("Set %s to %d\n", name, (int)value);
     } else if (var_type == AP_PARAM_INT8) {
+        old_value = ((AP_Int8 *)vp)->cast_to_float();
         ((AP_Int8 *)vp)->set(value);
-        ::printf("Set %s to %d\n", name, (int)value);
     } else {
         // we don't support mavlink set on this parameter
         return false;
+    }
+    if (fabsf(old_value - value) > 1.0e-12) {
+        ::printf("Changed %s to %.8f from %.8f\n", name, value, old_value);
     }
     return true;
 }

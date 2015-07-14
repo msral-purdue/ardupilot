@@ -165,7 +165,7 @@ void Copter::setup()
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 
     // setup initial performance counters
     perf_info_reset();
@@ -272,6 +272,11 @@ void Copter::fast_loop()
 
     // check if we've landed or crashed
     update_land_and_crash_detectors();
+
+    // log sensor health
+    if (should_log(MASK_LOG_ANY)) {
+        Log_Sensor_Health();
+    }
 }
 
 // rc_loops - reads user input from transmitter/receiver
