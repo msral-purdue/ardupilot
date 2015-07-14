@@ -21,6 +21,7 @@ void Copter::userhook_FastLoop()
 void Copter::userhook_50Hz()
 {
     // put your 50Hz code here
+	vicon.read_packet();
 }
 #endif
 
@@ -42,5 +43,6 @@ void Copter::userhook_SlowLoop()
 void Copter::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
+	vicon.check_vicon_status();
 }
 #endif

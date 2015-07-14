@@ -112,6 +112,9 @@
 // Local modules
 #include "Parameters.h"
 
+// Vicon library
+#include <Vicon.h>
+
 class Copter {
     public:
     friend class GCS_MAVLINK;
@@ -172,8 +175,11 @@ private:
     bool sonar_enabled; // enable user switch for sonar
 #endif
 
+    // For VICON pos/altitude control
+	VICON vicon;
+
     // Inertial Navigation EKF
-    NavEKF EKF{&ahrs, barometer, sonar};
+    NavEKF EKF{&ahrs, &vicon, barometer, sonar}; //NavEKF EKF{&ahrs, barometer, sonar};
     AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

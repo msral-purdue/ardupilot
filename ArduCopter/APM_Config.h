@@ -43,13 +43,30 @@
 
 //#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
 
+// **************** For Vicon  ****************
+//#define FRAME_CONFIG HEXA_FRAME // Changed this to QUAD from HEXA
+#define QUAD_FRAME
+#define FRAME_ORIENTATION      X_FRAME
+#define ROLL_PITCH_INPUT_MAX      2500
+
+ // LOITER Mode
+ #ifndef LOITER_THR
+ # define LOITER_THR                THROTTLE_AUTO
+#endif
+
+#ifndef ALT_HOLD_THR
+ # define ALT_HOLD_THR           	THROTTLE_AUTO
+#endif
+
+
 // User Hooks : For User Developed code that you wish to run
 // Put your variable definitions into the UserVariables.h file (or another file name and then change the #define below).
-//#define USERHOOK_VARIABLES "UserVariables.h"
+#define USERHOOK_VARIABLES "UserVariables.h"
+#define USERHOOK_USERCODE
 // Put your custom code into the UserCode.pde with function names matching those listed below and ensure the appropriate #define below is uncommented below
-//#define USERHOOK_INIT userhook_init();                      // for code to be run once at startup
-//#define USERHOOK_FASTLOOP userhook_FastLoop();            // for code to be run at 100hz
-//#define USERHOOK_50HZLOOP userhook_50Hz();                  // for code to be run at 50hz
-//#define USERHOOK_MEDIUMLOOP userhook_MediumLoop();        // for code to be run at 10hz
-//#define USERHOOK_SLOWLOOP userhook_SlowLoop();            // for code to be run at 3.3hz
-//#define USERHOOK_SUPERSLOWLOOP userhook_SuperSlowLoop();  // for code to be run at 1hz
+#define USERHOOK_INIT userhook_init();                      // for code to be run once at startup
+#define USERHOOK_FASTLOOP userhook_FastLoop();            // for code to be run at 100hz
+#define USERHOOK_50HZLOOP userhook_50Hz();                  // for code to be run at 50hz
+#define USERHOOK_MEDIUMLOOP userhook_MediumLoop();        // for code to be run at 10hz
+#define USERHOOK_SLOWLOOP userhook_SlowLoop();            // for code to be run at 3.3hz
+#define USERHOOK_SUPERSLOWLOOP userhook_SuperSlowLoop();  // for code to be run at 1hz

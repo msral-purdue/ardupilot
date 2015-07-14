@@ -30,6 +30,7 @@
 #include <AP_Nav_Common.h>
 #include <GCS_MAVLink.h>
 #include <AP_RangeFinder.h>
+#include <Vicon.h>
 
 // #define MATH_CHECK_INDEXES 1
 
@@ -89,7 +90,8 @@ public:
 #endif
 
     // Constructor
-    NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
+    NavEKF(const AP_AHRS *ahrs, VICON * vicon, AP_Baro &baro, const RangeFinder &rng);
+    //NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
 
     // This function is used to initialise the filter whilst moving, using the AHRS DCM solution
     // It should NOT be used to re-initialise after a timeout as DCM will also be corrupted
@@ -273,6 +275,9 @@ private:
     const AP_AHRS *_ahrs;
     AP_Baro &_baro;
     const RangeFinder &_rng;
+
+    const VICON * _vicon;
+    uint32_t _vicon_last_update; // time in microseconds of last vicon update
 
     // the states are available in two forms, either as a Vector34, or
     // broken down as individual elements. Both are equivalent (same
