@@ -4,7 +4,7 @@
  *
  *       AHRS system using DCM matrices
  *
- *       Based on DCM code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
+ *       Based on DCM code by Doug Weibel, Jordi Muï¿½oz and Jose Julio. DIYDrones.com
  *
  *       Adapted for the general ArduPilot AHRS interface by Andrew Tridgell
 
@@ -239,7 +239,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
  *  to approximations rather than identities. In effect, the axes in the two frames of reference no
  *  longer describe a rigid body. Fortunately, numerical error accumulates very slowly, so it is a
  *  simple matter to stay ahead of it.
- *  We call the process of enforcing the orthogonality conditions ÒrenormalizationÓ.
+ *  We call the process of enforcing the orthogonality conditions ï¿½renormalizationï¿½.
  */
 void
 AP_AHRS_DCM::normalize(void)
@@ -397,7 +397,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     float yaw_error;
     float yaw_deltat;
 
-    if (AP_AHRS_DCM::use_compass()) {
+    if (AP_AHRS_DCM::use_compass() && !_vicon->get_vicon_status()) {
         /*
           we are using compass for yaw
          */
@@ -460,7 +460,26 @@ AP_AHRS_DCM::drift_correction_yaw(void)
                 yaw_error = 0;
             }
         }
-    }
+    } else if (_vicon->get_vicon_status()) {
+		/*
+          we are using vicon for yaw
+         */
+        if (_vicon->last_update != _vicon_last_update) {
+            yaw_deltat = (_vicon->last_update - _vicon_last_update) * 1.0e-6f;
+            _vicon_last_update = _vicon->last_update;
+            if (!_flags.have_initial_yaw) {
+                float heading = _vicon->get_yaw();
+                _dcm_matrix.from_euler(roll, pitch, heading);
+                _omega_yaw_P.zero();
+                _flags.have_initial_yaw = true;
+            }
+            new_value = true;
+
+			float heading = _vicon->get_yaw();
+            float yaw_error_rad = wrap_PI(heading - yaw);
+            yaw_error = sinf(yaw_error_rad);
+        }
+	}
 
     if (!new_value) {
         // we don't have any new yaw information

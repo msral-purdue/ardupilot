@@ -16,17 +16,24 @@
 */
 void AP_InertialNav_NavEKF::update(float dt)
 {
-    _ahrs_ekf.get_NavEKF().getPosNED(_relpos_cm);
-    _relpos_cm *= 100; // convert to cm
+	if(_ahrs_ekf.EKF.vicon->get_status())
+	{
+		_relpos_cm = _ahrs_ekf.EKF.vicon->getPosNEU(); 	  // In cm NEU
+		_velocity_cm = _ahrs_ekf.EKF.vicon->getVelNEU();  // In cm NEU
+	} else
+	{
+		_ahrs_ekf.get_NavEKF().getPosNED(_relpos_cm);
+		_relpos_cm *= 100; // convert to cm
 
-    _haveabspos = _ahrs_ekf.get_position(_abspos);
+		_haveabspos = _ahrs_ekf.get_position(_abspos); // NOT USED ANYWHERE!
 
-    _ahrs_ekf.get_NavEKF().getVelNED(_velocity_cm);
-    _velocity_cm *= 100; // convert to cm/s
+		_ahrs_ekf.get_NavEKF().getVelNED(_velocity_cm);
+		_velocity_cm *= 100; // convert to cm/s
 
-    // InertialNav is NEU
-    _relpos_cm.z = - _relpos_cm.z;
-    _velocity_cm.z = -_velocity_cm.z;
+		// InertialNav is NEU
+		_relpos_cm.z = - _relpos_cm.z;
+		_velocity_cm.z = -_velocity_cm.z;
+	}
 }
 
 /**

@@ -7,6 +7,7 @@ void Copter::userhook_init()
 {
     // put your initialisation code here
     // this will be called once at start-up
+	hal.uartC->(57600, 512, 256); // begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace
 }
 #endif
 

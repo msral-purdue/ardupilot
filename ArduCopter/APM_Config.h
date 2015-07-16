@@ -47,16 +47,18 @@
 //#define FRAME_CONFIG HEXA_FRAME // Changed this to QUAD from HEXA
 #define QUAD_FRAME
 #define FRAME_ORIENTATION      X_FRAME
-#define ROLL_PITCH_INPUT_MAX      2500
+#define ROLL_PITCH_INPUT_MAX      2500 // 25 degrees max
 
  // LOITER Mode
- #ifndef LOITER_THR
+/*
+#ifndef LOITER_THR
  # define LOITER_THR                THROTTLE_AUTO
 #endif
 
 #ifndef ALT_HOLD_THR
  # define ALT_HOLD_THR           	THROTTLE_AUTO
 #endif
+*/
 
 
 // User Hooks : For User Developed code that you wish to run

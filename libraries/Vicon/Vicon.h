@@ -17,6 +17,7 @@
 
 #define VICON_TRANSLATION_RANGE				25000	/*	in 0.01 cm	*/
 #define VICON_ORIENTATION_RANGE				18000	/*	in 0.01 deg	*/
+#define VICON_PACKET_LENGTH					24   	/* head ID X Y Z VX VY VZ Yaw tail */
 
 /// @class      Vicon
 class Vicon
@@ -38,6 +39,9 @@ public:
 	float       get_y() const { return _position.y; }	//return y in cm
 	float       get_z() const { return _position.z; }	//return z in cm
 	float 		get_yaw(void) const { return yaw; }		//return heading in radians
+	Vector3f	getPosNEU(); // return x,y,z in cm (in NED frame)
+	Vector3f	getVelNEU(); // return x,y,z in cm (in NED frame)
+
 
 private:
 

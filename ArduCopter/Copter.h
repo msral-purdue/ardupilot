@@ -176,7 +176,7 @@ private:
 #endif
 
     // For VICON pos/altitude control
-	VICON vicon;
+	Vicon vicon;
 
     // Inertial Navigation EKF
     NavEKF EKF{&ahrs, &vicon, barometer, sonar}; //NavEKF EKF{&ahrs, barometer, sonar};

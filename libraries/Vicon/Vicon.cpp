@@ -40,7 +40,7 @@ bool Vicon::read_packet()
 						packet_length = j+1;
 						//hal.uartA->printf_P(PSTR(" %d "), packet_length);		// for debug
 
-						if(packet_length == 14)		// vicon packet construction: [ head signX XH XL signY YH YL signZ ZH ZL signYaw YawH YawL tail ], 14 bytes in total
+						if(packet_length == VICON_PACKET_LENGTH)		// vicon packet construction: [ head signX XH XL signY YH YL signZ ZH ZL signYaw YawH YawL tail ], 14 bytes in total
 						{
 							analyze_packet();	// process packet information
 							return true;	// return success
@@ -60,26 +60,38 @@ bool Vicon::read_packet()
 }
 
 /*************************************************************************************************/
+/* head ID X Y Z VX VY VZ Yaw tail */
+/* X,Y,Z sent as mm and VX,VY,VZ as mm/s, Yaw in units of .01 degrees */
 void Vicon::analyze_packet()
 {
-    uint8_t head, tail;
+    uint8_t head, tail, ID;
 	uint8_t signX, signY, signZ, signYaw;
-	uint16_t tmpX, tmpY, tmpZ, tmpYaw;	/* 	register stores absolute position in 0.1mm	*/
+	uint8_t signVX, signVY, signVZ;
+	uint16_t tmpX, tmpY, tmpZ, tmpYaw;	/* 	register stores absolute position in 1 mm	*/
+	uint16_t tmpVX, tmpVY, tmpVZ;
 	int16_t yaw_sensor; 				// Added to fix compile errors
 
 	head = buffer[0];
-	tail = buffer[13];
+	tail = buffer[VICON_PACKET_LENGTH-1];
 
-	signX = buffer[1];
-	signY = buffer[4];
-	signZ = buffer[7];
-	signYaw = buffer[10];
+	ID    = buffer[1];
+
+	signX = buffer[2];
+	signY = buffer[5];
+	signZ = buffer[8];
+	signVX = buffer[11];
+	signVY = buffer[14];
+	signVZ = buffer[17];
+	signYaw = buffer[20];
 
 	// transfer two 8-bit bytes into a 16-bit value
-	tmpX = buffer[2] << 8 | buffer[3];
-	tmpY = buffer[5] << 8 | buffer[6];
-	tmpZ = buffer[8] << 8 | buffer[9];
-	tmpYaw = buffer[11] << 8 | buffer[12];
+	tmpX   = buffer[3] << 8 | buffer[4];
+	tmpY   = buffer[6] << 8 | buffer[7];
+	tmpZ   = buffer[9] << 8 | buffer[10];
+	tmpVX  = buffer[12] << 8 | buffer[13];
+	tmpVY  = buffer[15] << 8 | buffer[16];
+	tmpVZ  = buffer[18] << 8 | buffer[19];
+	tmpYaw = buffer[21] << 8 | buffer[22];
 
 	// for debug
 	//hal.uartA->printf_P(PSTR("head %c "),buffer[0]);
@@ -88,49 +100,68 @@ void Vicon::analyze_packet()
 	//hal.uartA->printf_P(PSTR(" P %u %u %u %u "), tmpX, tmpY, tmpZ, tmpYaw);
 
 	// check if packet is valid
-	if(head == '$' || tail == '&'){
-		if(signX == '+' || signX == '-'){
-			if(signY == '+' || signY == '-'){
-				if(signZ == '+' || signZ == '-'){
-					/*	valid data is considered as range X,Y -2.5~2.5m, Z 0~2.5m, Yaw -180~180 degrees	*/
-					if(tmpX <= VICON_TRANSLATION_RANGE && tmpY <= VICON_TRANSLATION_RANGE && tmpZ <= VICON_TRANSLATION_RANGE && tmpYaw <= VICON_ORIENTATION_RANGE)
-					{
-						if(signX == '+')
-							_position.x = (float)tmpX;
-						else if(signX == '-')
-							_position.x = -(float)(tmpX);
+	if( head == '$' && tail == '&' && (signX == '+' || signX == '-') &&
+		(signY == '+' || signY == '-') && (signZ == '+' || signZ == '-') &&
+		(signVX == '+' || signVX == '-') && (signVY == '+' || signVY == '-') &&
+		(signVZ == '+' || signVZ == '-') )
+	{
+		/*	valid data is considered as range X,Y -2.5~2.5m, Z 0~2.5m, Yaw -180~180 degrees	*/
+		if(tmpX <= VICON_TRANSLATION_RANGE && tmpY <= VICON_TRANSLATION_RANGE && tmpZ <= VICON_TRANSLATION_RANGE && tmpYaw <= VICON_ORIENTATION_RANGE)
+		{
+			if(signX == '+')
+				_position.x = (float)tmpX;
+			else if(signX == '-')
+				_position.x = -(float)(tmpX);
 
-						if(signY == '+')
-							_position.y = (float)tmpY;
-						else if(signY == '-')
-							_position.y = -(float)(tmpY);
+			if(signY == '+')
+				_position.y = (float)tmpY;
+			else if(signY == '-')
+				_position.y = -(float)(tmpY);
 
-						if(signZ == '+')
-							_position.z = (float)tmpZ;
-						else if(signZ == '-')
-							_position.z = (float)(-tmpZ);
+			if(signZ == '+')
+				_position.z = (float)tmpZ;
+			else if(signZ == '-')
+				_position.z = (float)(-tmpZ);
 
-						if(signYaw == '+')
-							yaw_sensor = (int16_t)tmpYaw;
-						else if(signYaw == '-')
-							yaw_sensor = -(int16_t)(tmpYaw);
+			if(signVX == '+')
+				_velocity.x = (float)tmpVX;
+			else if(signZ == '-')
+				_velocity.x = (float)(-tmpVX);
 
-						/*	from 0.1mm to cm, int16_t to float	*/
-						_position.x = _position.x / 100.0;
-						_position.y = _position.y / 100.0;
-						_position.z = _position.z / 100.0;
-						yaw = radians( yaw_sensor * 0.01f);
+			if(signVY == '+')
+				_velocity.y = (float)tmpVY;
+			else if(signZ == '-')
+				_velocity.y = (float)(-tmpVY);
 
-						//hal.uartA->printf_P(PSTR(" P %f %f %f %d "), _position.x, _position.y, _position.z, yaw_sensor);
+			if(signVZ == '+')
+				_velocity.z = (float)tmpVZ;
+			else if(signZ == '-')
+				_velocity.z = (float)(-tmpVZ);
 
-						// record vicon update time
-						last_update = hal.scheduler->millis();
+			if(signYaw == '+')
+				yaw_sensor = (int16_t)tmpYaw;
+			else if(signYaw == '-')
+				yaw_sensor = -(int16_t)(tmpYaw);
 
-						// flag of valid packet
-						vicon_success_count++;
-					}
-				}
-			}
+			/*	from 1 mm to cm, int16_t to float	*/
+			_position.x = _position.x / 10.0;
+			_position.y = _position.y / 10.0;
+			_position.z = _position.z / 10.0;
+
+			/*	from 1 mm/s to cm/s, int16_t to float	*/
+			_velocity.x = _velocity.x / 10.0;
+			_velocity.y = _velocity.y / 10.0;
+			_velocity.z = _velocity.z / 10.0;
+
+			yaw = radians( yaw_sensor * 0.01f);
+
+			//hal.uartA->printf_P(PSTR(" P %f %f %f %d "), _position.x, _position.y, _position.z, yaw_sensor);
+
+			// record vicon update time
+			last_update = hal.scheduler->millis();
+
+			// flag of valid packet
+			vicon_success_count++;
 		}
 	}else
 	{
@@ -171,4 +202,22 @@ void Vicon::check_vicon_status()	//1 Hz
 	// Commented out to fix compile errors
 	//flag_count = 0;
 
+}
+
+// return x,y,z in cm (in NEU frame)
+Vector3f Vicon::getPosNEU()
+{
+	// If Vicon X is north, Vicon Y is West
+	Vector3f _position_NEU = _position;
+	_position_NEU.y = -_position.y;
+	return _position_NEU;
+}
+
+// return x,y,z in cm (in NEU frame)
+Vector3f Vicon::getVelNEU()
+{
+	// If Vicon X is north, Vicon Y is West
+	Vector3f _velocity_NEU = _velocity;
+	_velocity_NEU.y = -_velocity.y;
+	return _velocity_NEU;
 }

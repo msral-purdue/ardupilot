@@ -66,11 +66,11 @@ void setup(void)
     /*
       start all UARTs at 57600 with default buffer sizes
      */
-    setup_uart(hal.uartA, "uartA"); // console
-    setup_uart(hal.uartB, "uartB"); // 1st GPS
-    setup_uart(hal.uartC, "uartC"); // telemetry 1
-    setup_uart(hal.uartD, "uartD"); // telemetry 2
-    setup_uart(hal.uartE, "uartE"); // 2nd GPS
+    setup_uart(hal.uartA, "uartA (console)"); // console
+    setup_uart(hal.uartB, "uartB (1st GPS)"); // 1st GPS
+    setup_uart(hal.uartC, "uartC (TELEM1)"); // telemetry 1
+    setup_uart(hal.uartD, "uartD (TELEM2)"); // telemetry 2
+    setup_uart(hal.uartE, "uartE (2nd GPS/SERIAL4)"); // 2nd GPS
 }
 
 static void test_uart(AP_HAL::UARTDriver *uart, const char *name)
@@ -85,11 +85,54 @@ static void test_uart(AP_HAL::UARTDriver *uart, const char *name)
 
 void loop(void) 
 {	
-    test_uart(hal.uartA, "uartA");
-    test_uart(hal.uartB, "uartB");
-    test_uart(hal.uartC, "uartC");
-    test_uart(hal.uartD, "uartD");
-    test_uart(hal.uartE, "uartE");
+    test_uart(hal.uartA, "uartA (console)");
+    test_uart(hal.uartB, "uartB (1st GPS)");
+    test_uart(hal.uartC, "uartC (TELEM1)");
+    test_uart(hal.uartD, "uartD (TELEM2)");
+    test_uart(hal.uartE, "uartE (2nd GPS/SERIAL4)");
+
+    // Read from serial
+    uint8_t i, j;
+    uint8_t count = 0;
+    uint8_t buffer[256];
+    uint8_t packet_length;
+
+    if(hal.uartC->available() != -1)	// if there are bytes in RX buffer
+    	{
+    		count = hal.uartC->available();		// read available bytes in the buffer
+    		//hal.uartA->printf_P(PSTR("\n %d: "),count);	// for debug
+
+    		for(i = 0; i  < count; i++)
+    		{
+    			buffer[0] = hal.uartC->read();		// read byte
+    			//hal.uartA->printf_P(PSTR("%c"),buffer[0]);	// for debug
+
+    			if(buffer[0] == '$')	// looking for head of valid packet: '$'
+    			{
+    				for(j = 1; j  <= count - i; j++)	// read following bytes and fill the buffer with the packet
+    				{
+    					buffer[j] = hal.uartC->read();
+    					//hal.uartA->printf_P(PSTR("%c"),buffer[j]);	// for debug
+
+    					if(buffer[j] == '&')	// looking for packet tail
+    					{
+    						packet_length = j+1;
+    						//hal.uartA->printf_P(PSTR(" %d "), packet_length);		// for debug
+
+							// for debug
+							hal.uartA->printf_P(PSTR("head %c "),buffer[0]);
+							hal.uartA->printf_P(PSTR("tail %c "),buffer[1]);
+							//hal.uartA->printf_P(PSTR("sign %c %c %c %c"),buffer[1],buffer[4],buffer[7],buffer[10]);
+							//hal.uartA->printf_P(PSTR(" P %u %u %u %u "), tmpX, tmpY, tmpZ, tmpYaw);
+						}
+						else{}
+					}
+				}
+    			else if(buffer[0] == '#')	// head of invalid packet
+    			{
+    			}
+    		}
+    	}
 
     // also do a raw printf() on some platforms, which prints to the
     // debug console
