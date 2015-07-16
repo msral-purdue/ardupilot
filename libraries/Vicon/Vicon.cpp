@@ -13,7 +13,7 @@ extern const AP_HAL::HAL& hal;
 
 /*************************************************************************************************/
 // calling at same frequency of the vicon system, or slightly faster
-bool VICON::read_packet()
+bool Vicon::read_packet()
 {
 	uint8_t i, j;
 	uint8_t count = 0;
@@ -60,11 +60,12 @@ bool VICON::read_packet()
 }
 
 /*************************************************************************************************/
-void VICON::analyze_packet()
+void Vicon::analyze_packet()
 {
     uint8_t head, tail;
 	uint8_t signX, signY, signZ, signYaw;
 	uint16_t tmpX, tmpY, tmpZ, tmpYaw;	/* 	register stores absolute position in 0.1mm	*/
+	int16_t yaw_sensor; 				// Added to fix compile errors
 
 	head = buffer[0];
 	tail = buffer[13];
@@ -147,7 +148,7 @@ void VICON::analyze_packet()
 
 /*************************************************************************************************/
 // calling at 1 Hz, check if a valid link still exists between UAV and vicon system
-void VICON::check_vicon_status()	//1 Hz
+void Vicon::check_vicon_status()	//1 Hz
 {
 	// if more than 25 packets have been received in one second, we consider a valid link exists within this second
 	if(vicon_success_count > 25)
@@ -167,10 +168,7 @@ void VICON::check_vicon_status()	//1 Hz
 		vicon_status = false;
 	}
 
-	flag_count = 0;
+	// Commented out to fix compile errors
+	//flag_count = 0;
 
 }
-
-
-
-

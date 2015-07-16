@@ -90,7 +90,7 @@ public:
 #endif
 
     // Constructor
-    NavEKF(const AP_AHRS *ahrs, VICON * vicon, AP_Baro &baro, const RangeFinder &rng);
+    NavEKF(const AP_AHRS *ahrs, Vicon * vicon, AP_Baro &baro, const RangeFinder &rng);
     //NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
 
     // This function is used to initialise the filter whilst moving, using the AHRS DCM solution
@@ -276,7 +276,7 @@ private:
     AP_Baro &_baro;
     const RangeFinder &_rng;
 
-    const VICON * _vicon;
+    const Vicon * _vicon;
     uint32_t _vicon_last_update; // time in microseconds of last vicon update
 
     // the states are available in two forms, either as a Vector34, or

@@ -1,3 +1,5 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 /*
  * Vicon.h
  *
@@ -16,8 +18,8 @@
 #define VICON_TRANSLATION_RANGE				25000	/*	in 0.01 cm	*/
 #define VICON_ORIENTATION_RANGE				18000	/*	in 0.01 deg	*/
 
-/// @class      VICON
-class VICON
+/// @class      Vicon
+class Vicon
 {
 public:
 
@@ -35,11 +37,12 @@ public:
 	float       get_x() const { return _position.x; }	//return x in cm
 	float       get_y() const { return _position.y; }	//return y in cm
 	float       get_z() const { return _position.z; }	//return z in cm
-	float get_yaw(void) const { return yaw; }		//return heading in radians
+	float 		get_yaw(void) const { return yaw; }		//return heading in radians
 
 private:
 
 	Vector3f    _position; 	// position in 0.01 cm
+	Vector3f	_velocity;  // velocity (Added by Daniel July 15 to fix compile errors)
 	float yaw;			// heading in radians
 
 	uint8_t vicon_fail_count;
