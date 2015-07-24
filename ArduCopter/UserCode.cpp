@@ -45,5 +45,12 @@ void Copter::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
 	vicon.check_vicon_status();
+
+	// DEBUG print vicon status information to usb console
+	if(vicon.vicon_status) {
+		hal.uartA->printf_P(PSTR("VICON connected!\n"),buffer[13]);
+	} else {
+		hal.uartA->printf_P(PSTR("VICON disconnected...\n"));
+	}
 }
 #endif

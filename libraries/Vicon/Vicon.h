@@ -39,8 +39,8 @@ public:
 	float       get_y() const { return _position.y; }	//return y in cm
 	float       get_z() const { return _position.z; }	//return z in cm
 	float 		get_yaw(void) const { return yaw; }		//return heading in radians
-	Vector3f	getPosNEU(); // return x,y,z in cm (in NED frame)
-	Vector3f	getVelNEU(); // return x,y,z in cm (in NED frame)
+	Vector3f	getPosNEU(); // return x,y,z in cm (in NEU frame)
+	Vector3f	getVelNEU(); // return x,y,z in cm (in NEU frame)
 
 
 private:

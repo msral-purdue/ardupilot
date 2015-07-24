@@ -45,8 +45,8 @@
 
 // **************** For Vicon  ****************
 //#define FRAME_CONFIG HEXA_FRAME // Changed this to QUAD from HEXA
-#define QUAD_FRAME
-#define FRAME_ORIENTATION      X_FRAME
+#//define QUAD_FRAME
+#//define FRAME_ORIENTATION      X_FRAME
 #define ROLL_PITCH_INPUT_MAX      2500 // 25 degrees max
 
  // LOITER Mode
