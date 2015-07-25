@@ -111,13 +111,13 @@ public:
     const Vicon * getVicon(void) const { return _vicon; }
 
     // Check the Vicon data link, return true if Vicon data is streaming
-	bool getViconStatus(void) const { return _vicon->get_vicon_status(); }
+    bool getViconStatus(void) const { return _vicon->get_vicon_status(); }
 
-	// Check the Vicon data link, return true if Vicon data is streaming
-	Vector3f getViconPosNEU(void) const { return _vicon->getPosNEU(); }
+    // Return vicon position (x,y,z) in NEU frame
+    Vector3f getViconPosNEU(void) const { return _vicon->getPosNEU(); }
 
-	// Check the Vicon data link, return true if Vicon data is streaming
-	Vector3f getViconVelNEU(void) const { return _vicon->getVelNEU(); }
+    // Return vicon velocity (x,y,z) in NEU frame
+    Vector3f getViconVelNEU(void) const { return _vicon->getVelNEU(); }
 
     // Return the last calculated NED position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
