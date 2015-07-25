@@ -18,21 +18,21 @@ bool Vicon::read_packet()
 	uint8_t i, j;
 	uint8_t count = 0;
 
-	if(hal.uartC->available() != -1)	// if there are bytes in RX buffer
+	if(XBEE->available() != -1)	// if there are bytes in RX buffer
 	{
-		count = hal.uartC->available();		// read available bytes in the buffer
+		count = XBEE->available();		// read available bytes in the buffer
 		//hal.uartA->printf_P(PSTR("\n %d: "),count);	// for debug
 
 		for(i = 0; i  < count; i++)
 		{
-			buffer[0] = hal.uartC->read();		// read byte
+			buffer[0] = XBEE->read();		// read byte
 			//hal.uartA->printf_P(PSTR("%c"),buffer[0]);	// for debug
 
 			if(buffer[0] == '$')	// looking for head of valid packet: '$'
 			{
 				for(j = 1; j  <= count - i; j++)	// read following bytes and fill the buffer with the packet
 				{
-					buffer[j] = hal.uartC->read();
+					buffer[j] = XBEE->read();
 					//hal.uartA->printf_P(PSTR("%c"),buffer[j]);	// for debug
 
 					if(buffer[j] == '&')	// looking for packet tail
@@ -64,17 +64,18 @@ bool Vicon::read_packet()
 /* X,Y,Z sent as mm and VX,VY,VZ as mm/s, Yaw in units of .01 degrees */
 void Vicon::analyze_packet()
 {
-    uint8_t head, tail, ID;
+    uint8_t head, tail, ID_in;
 	uint8_t signX, signY, signZ, signYaw;
 	uint8_t signVX, signVY, signVZ;
 	uint16_t tmpX, tmpY, tmpZ, tmpYaw;	/* 	register stores absolute position in 1 mm	*/
 	uint16_t tmpVX, tmpVY, tmpVZ;
-	int16_t yaw_sensor; 				// Added to fix compile errors
+	int16_t yaw_sensor = 0; 				// Added to fix compile errors
 
 	head = buffer[0];
 	tail = buffer[VICON_PACKET_LENGTH-1];
 
-	ID    = buffer[1];
+	ID_in    = buffer[1];
+	ID = (char) ID_in;
 
 	signX = buffer[2];
 	signY = buffer[5];
@@ -144,14 +145,14 @@ void Vicon::analyze_packet()
 				yaw_sensor = -(int16_t)(tmpYaw);
 
 			/*	from 1 mm to cm, int16_t to float	*/
-			_position.x = _position.x / 10.0;
-			_position.y = _position.y / 10.0;
-			_position.z = _position.z / 10.0;
+			_position.x = _position.x / 10.0f;
+			_position.y = _position.y / 10.0f;
+			_position.z = _position.z / 10.0f;
 
 			/*	from 1 mm/s to cm/s, int16_t to float	*/
-			_velocity.x = _velocity.x / 10.0;
-			_velocity.y = _velocity.y / 10.0;
-			_velocity.z = _velocity.z / 10.0;
+			_velocity.x = _velocity.x / 10.0f;
+			_velocity.y = _velocity.y / 10.0f;
+			_velocity.z = _velocity.z / 10.0f;
 
 			yaw = radians( yaw_sensor * 0.01f);
 

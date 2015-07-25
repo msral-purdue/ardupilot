@@ -19,6 +19,9 @@
 #define VICON_ORIENTATION_RANGE				18000	/*	in 0.01 deg	*/
 #define VICON_PACKET_LENGTH					24   	/* head ID X Y Z VX VY VZ Yaw tail */
 
+// Use TELEM2 (UartD) for XBee/Vicon communication
+#define XBEE	hal.uartD
+
 /// @class      Vicon
 class Vicon
 {
@@ -44,7 +47,7 @@ public:
 
 
 private:
-
+	char		ID;
 	Vector3f    _position; 	// position in 0.01 cm
 	Vector3f	_velocity;  // velocity (Added by Daniel July 15 to fix compile errors)
 	float yaw;			// heading in radians
