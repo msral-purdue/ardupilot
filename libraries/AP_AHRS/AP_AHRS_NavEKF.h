@@ -35,7 +35,7 @@ class AP_AHRS_NavEKF : public AP_AHRS_DCM
 public:
     // Constructor
 AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng, NavEKF &_EKF) :
-    AP_AHRS_DCM(ins, baro, gps),
+    AP_AHRS_DCM(ins, baro, gps, _EKF.getVicon()),
         EKF(_EKF),
         ekf_started(false),
         startup_delay_ms(1000),

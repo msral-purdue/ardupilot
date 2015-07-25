@@ -90,7 +90,7 @@ public:
 #endif
 
     // Constructor
-    NavEKF(const AP_AHRS *ahrs, Vicon * vicon, AP_Baro &baro, const RangeFinder &rng);
+    NavEKF(const AP_AHRS *ahrs, const Vicon * vicon, AP_Baro &baro, const RangeFinder &rng);
     //NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
 
     // This function is used to initialise the filter whilst moving, using the AHRS DCM solution
@@ -106,6 +106,18 @@ public:
 
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
+
+    // Return a pointer to the Vicon object
+    const Vicon * getVicon(void) const { return _vicon; }
+
+    // Check the Vicon data link, return true if Vicon data is streaming
+	bool getViconStatus(void) const { return _vicon->get_vicon_status(); }
+
+	// Check the Vicon data link, return true if Vicon data is streaming
+	Vector3f getViconPosNEU(void) const { return _vicon->getPosNEU(); }
+
+	// Check the Vicon data link, return true if Vicon data is streaming
+	Vector3f getViconVelNEU(void) const { return _vicon->getVelNEU(); }
 
     // Return the last calculated NED position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
@@ -273,11 +285,9 @@ public:
 
 private:
     const AP_AHRS *_ahrs;
+    const Vicon * _vicon;
     AP_Baro &_baro;
     const RangeFinder &_rng;
-
-    const Vicon * _vicon;
-    uint32_t _vicon_last_update; // time in microseconds of last vicon update
 
     // the states are available in two forms, either as a Vector34, or
     // broken down as individual elements. Both are equivalent (same

@@ -7,7 +7,7 @@ void Copter::userhook_init()
 {
     // put your initialisation code here
     // this will be called once at start-up
-	hal.uartC->(57600, 512, 256); // begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace
+	hal.uartC->begin(57600, 512, 256); // begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace
 }
 #endif
 
@@ -48,7 +48,7 @@ void Copter::userhook_SuperSlowLoop()
 
 	// DEBUG print vicon status information to usb console
 	if(vicon.vicon_status) {
-		hal.uartA->printf_P(PSTR("VICON connected!\n"),buffer[13]);
+		hal.uartA->printf_P(PSTR("VICON connected!\n"));
 	} else {
 		hal.uartA->printf_P(PSTR("VICON disconnected...\n"));
 	}

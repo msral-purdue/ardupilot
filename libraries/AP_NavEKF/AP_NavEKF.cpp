@@ -386,7 +386,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
 // constructor
 //NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
-NavEKF::NavEKF(const AP_AHRS *ahrs, Vicon * vicon, AP_Baro &baro, const RangeFinder &rng) :
+NavEKF::NavEKF(const AP_AHRS *ahrs, const Vicon * vicon, AP_Baro &baro, const RangeFinder &rng) :
     _ahrs(ahrs),
 	_vicon(vicon),
     _baro(baro),

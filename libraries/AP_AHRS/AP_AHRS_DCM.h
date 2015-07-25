@@ -20,13 +20,16 @@
  *  ArduPilot
  *
  */
+#include <Vicon.h>
 
 class AP_AHRS_DCM : public AP_AHRS
 {
 public:
     // Constructors
-    AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
+    AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, const Vicon * vicon) :
     AP_AHRS(ins, baro, gps),
+		_vicon(vicon),
+		_vicon_last_update(0),
         _omega_I_sum_time(0.0f),
         _renorm_val_sum(0.0f),
         _renorm_val_count(0),
@@ -114,6 +117,9 @@ public:
     uint32_t uptime_ms(void) const;
 
 private:
+    const Vicon * _vicon;
+    uint32_t _vicon_last_update; // time in microseconds of last vicon update
+
     float _ki;
     float _ki_yaw;
 

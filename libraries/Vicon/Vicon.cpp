@@ -205,7 +205,7 @@ void Vicon::check_vicon_status()	//1 Hz
 }
 
 // return x,y,z in cm (in NEU frame)
-Vector3f Vicon::getPosNEU()
+Vector3f Vicon::getPosNEU() const
 {
 	// If Vicon X is north, Vicon Y is West
 	Vector3f _position_NEU = _position;
@@ -214,7 +214,7 @@ Vector3f Vicon::getPosNEU()
 }
 
 // return x,y,z in cm (in NEU frame)
-Vector3f Vicon::getVelNEU()
+Vector3f Vicon::getVelNEU() const
 {
 	// If Vicon X is north, Vicon Y is West
 	Vector3f _velocity_NEU = _velocity;

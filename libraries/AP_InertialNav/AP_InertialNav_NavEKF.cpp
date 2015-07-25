@@ -16,10 +16,10 @@
 */
 void AP_InertialNav_NavEKF::update(float dt)
 {
-	if(_ahrs_ekf.EKF.vicon->get_status())
+	if(_ahrs_ekf.get_NavEKF().getViconStatus())
 	{
-		_relpos_cm = _ahrs_ekf.EKF.vicon->getPosNEU(); 	  // In cm NEU
-		_velocity_cm = _ahrs_ekf.EKF.vicon->getVelNEU();  // In cm NEU
+		_relpos_cm = _ahrs_ekf.get_NavEKF().getViconPosNEU(); 	  // In cm NEU
+		_velocity_cm = _ahrs_ekf.get_NavEKF().getViconVelNEU();  // In cm NEU
 	} else
 	{
 		_ahrs_ekf.get_NavEKF().getPosNED(_relpos_cm);
