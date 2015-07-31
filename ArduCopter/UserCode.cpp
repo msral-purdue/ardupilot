@@ -7,7 +7,12 @@ void Copter::userhook_init()
 {
     // put your initialisation code here
     // this will be called once at start-up
-	XBEE->begin(57600, 512, 256); // begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace
+	//XBEE->begin(57600, 512, 256); // begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace
+	XBEE->begin(57600); // begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace
+
+	hal.console->println("Initializing XBEE Communications...");
+	vicon.initialize();
+	hal.console->println("\nXBEE Communications ready!");
 }
 #endif
 
@@ -15,6 +20,7 @@ void Copter::userhook_init()
 void Copter::userhook_FastLoop()
 {
     // put your 100Hz code here
+	vicon.read_packet();
 }
 #endif
 
@@ -22,7 +28,7 @@ void Copter::userhook_FastLoop()
 void Copter::userhook_50Hz()
 {
     // put your 50Hz code here
-	vicon.read_packet();
+	//vicon.read_packet();
 }
 #endif
 
@@ -43,14 +49,21 @@ void Copter::userhook_SlowLoop()
 #ifdef USERHOOK_SUPERSLOWLOOP
 void Copter::userhook_SuperSlowLoop()
 {
+	//vicon.read_packet();
     // put your 1Hz code here
-	vicon.check_vicon_status();
+	uint8_t msgs = vicon.check_vicon_status();
 
 	// DEBUG print vicon status information to usb console
 	if(vicon.vicon_status) {
-		hal.uartA->printf_P(PSTR("VICON connected!\n"));
+		hal.console->printf("\n\nVICON connected (%d msgs)!\n",msgs);
+		hal.console->printf("ID: %c\n",vicon.get_ID());
+		hal.console->printf("Position (in cm): (%.2f,%.2f,%.2f)\n",
+						   vicon.get_x(),vicon.get_y(),vicon.get_z());
+		hal.console->printf("Velocity (in cm/s): (%.2f,%.2f,%.2f)\n",
+								   vicon.get_Vx(),vicon.get_Vy(),vicon.get_Vz());
+		hal.console->printf("Yaw (in radians): %.3f\n",vicon.get_yaw());
 	} else {
-		hal.uartA->printf_P(PSTR("VICON disconnected...\n"));
+		hal.console->printf("\n\nVICON disconnected...(%d msgs)\n",vicon.vicon_success_count);
 	}
 }
 #endif

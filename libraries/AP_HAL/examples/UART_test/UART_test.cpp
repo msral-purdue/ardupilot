@@ -46,7 +46,7 @@ static AP_HAL::UARTDriver* uarts[] = {
     hal.uartA, // console
 };
 #define NUM_UARTS (sizeof(uarts)/sizeof(uarts[0]))
-
+#define XBEE	hal.uartE
 
 /*
   setup one UART at 57600
@@ -97,21 +97,23 @@ void loop(void)
     uint8_t buffer[256];
     uint8_t packet_length;
 
-    if(hal.uartC->available() != -1)	// if there are bytes in RX buffer
+    if(XBEE->available() > 0)	// if there are bytes in RX buffer
     	{
-    		count = hal.uartC->available();		// read available bytes in the buffer
-    		//hal.uartA->printf_P(PSTR("\n %d: "),count);	// for debug
+    		count = XBEE->available();		// read available bytes in the buffer
+
+    		hal.uartA->printf("\nReceived %d bytes: \n",count);	// for debug
 
     		for(i = 0; i  < count; i++)
     		{
-    			buffer[0] = hal.uartC->read();		// read byte
-    			//hal.uartA->printf_P(PSTR("%c"),buffer[0]);	// for debug
+    			buffer[i] = XBEE->read();		// read byte
+    			hal.uartA->printf("'%c",buffer[0]);	// for debug
+    			hal.uartA->printf(" (%d)'\n",(int) buffer[0]);	// for debug
 
     			if(buffer[0] == '$')	// looking for head of valid packet: '$'
     			{
-    				for(j = 1; j  <= count - i; j++)	// read following bytes and fill the buffer with the packet
+    				for(j = 1; j  < count - i; j++)	// read following bytes and fill the buffer with the packet
     				{
-    					buffer[j] = hal.uartC->read();
+    					buffer[j] = XBEE->read();
     					//hal.uartA->printf_P(PSTR("%c"),buffer[j]);	// for debug
 
     					if(buffer[j] == '&')	// looking for packet tail
@@ -120,8 +122,8 @@ void loop(void)
     						//hal.uartA->printf_P(PSTR(" %d "), packet_length);		// for debug
 
 							// for debug
-							hal.uartA->printf_P(PSTR("head %c "),buffer[0]);
-							hal.uartA->printf_P(PSTR("tail %c "),buffer[1]);
+							hal.uartA->printf("head %c ",buffer[0]);
+							hal.uartA->printf("tail %c \n",buffer[1]);
 							//hal.uartA->printf_P(PSTR("sign %c %c %c %c"),buffer[1],buffer[4],buffer[7],buffer[10]);
 							//hal.uartA->printf_P(PSTR(" P %u %u %u %u "), tmpX, tmpY, tmpZ, tmpYaw);
 						}

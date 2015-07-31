@@ -9,7 +9,8 @@
 // loiter_init - initialise loiter controller
 bool Copter::loiter_init(bool ignore_checks)
 {
-    if (position_ok() || optflow_position_ok() || ignore_checks) {
+	// Allow Loiter mode with Vicon data
+    if (vicon.get_vicon_status() || position_ok() || optflow_position_ok() || ignore_checks) {
 
         // set target to current position
         wp_nav.init_loiter_target();

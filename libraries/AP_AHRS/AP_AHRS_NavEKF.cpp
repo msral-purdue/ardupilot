@@ -69,7 +69,11 @@ void AP_AHRS_NavEKF::update(void)
     // correction
     roll = _dcm_attitude.x;
     pitch = _dcm_attitude.y;
-    yaw = _dcm_attitude.z;
+    if(EKF.getViconStatus())
+		yaw = EKF.getVicon()->get_yaw();	// DEBUG will this overwrite yaw for everything?
+    else
+        yaw = _dcm_attitude.z;
+
     update_cd_values();
 
     AP_AHRS_DCM::update();
@@ -94,7 +98,10 @@ void AP_AHRS_NavEKF::update(void)
             EKF.getEulerAngles(eulers);
             roll  = eulers.x;
             pitch = eulers.y;
-            yaw   = eulers.z;
+            if(EKF.getViconStatus())
+            	yaw = EKF.getVicon()->get_yaw();	// DEBUG will this overwrite yaw for everything?
+            else
+                yaw   = eulers.z;
 
             update_cd_values();
             update_trig();
