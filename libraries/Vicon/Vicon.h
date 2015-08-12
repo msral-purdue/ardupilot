@@ -22,7 +22,7 @@
 #define VICON_MSG_BEGIN						'$'		/* 'Begin-message' character */
 #define VICON_MSG_END						'&'		/* 'End-of-message' character */
 #define VICON_MSG_IGNORE					'#'		/* 'Invalid-packet' character */
-#define VICON_VEL_HZ						25		/* Rate at which to update velocity calculation */
+#define VICON_VEL_HZ						10		/* Rate at which to update velocity calculation */
 #define VICON_VEL_THRESHOLD					20000	/* Maximum reasonable velocity */
 
 // Use SERIAL4 (UartE) for XBee/Vicon communication
