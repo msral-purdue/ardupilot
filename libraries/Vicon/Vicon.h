@@ -58,8 +58,9 @@ public:
 
 
 private:
-	//Timing
+	// Velocity Calculations
 	uint32_t last_update_vel;	// Time since last velocity update in microseconds
+	bool reset_prev_pos;
 
 	// Vicon Data
 	char		ID;

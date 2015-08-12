@@ -15,6 +15,7 @@ Vicon::Vicon() :
 		vicon_status(false),
 		last_update(0),
 		last_update_vel(0),
+		reset_prev_pos(false),
 		ID(0),
 		_position(0.0f,0.0f,0.0f),
 		_position_prev(0.0f,0.0f,0.0f),
@@ -176,6 +177,13 @@ void Vicon::analyze_packet()
 		(signVX == '+' || signVX == '-') && (signVY == '+' || signVY == '-') &&
 		(signVZ == '+' || signVZ == '-') )
 	{
+
+		// Check for zero position
+		if(abs(_position.x) < 1e-9 && abs(_position.y) < 1e-9 && abs(_position.z) < 1e-9)
+		{
+			reset_prev_pos = true;
+		}
+
 		/*	valid data is considered as range X,Y -3.5~3.5m, Z 0~3.5m, Yaw -180~180 degrees	*/
 		if(tmpX <= VICON_TRANSLATION_RANGE && tmpY <= VICON_TRANSLATION_RANGE && tmpZ <= VICON_TRANSLATION_RANGE && tmpYaw <= VICON_ORIENTATION_RANGE)
 		{
@@ -215,11 +223,20 @@ void Vicon::analyze_packet()
 			else if(signYaw == '-')
 				yaw_sensor = -(int16_t)(tmpYaw);
 
+			// Reset previous position after each transition from zero to non-zero position
+			if(reset_prev_pos)
+			{
+				_position_prev.x = _position.x;
+				_position_prev.y = _position.y;
+				_position_prev.z = _position.z;
+				_velocity.x = 0; _velocity.y = 0; _velocity.z = 0;
+				reset_prev_pos = false;
+			}
+
 			// Calculate velocity
 			uint32_t this_time = hal.scheduler->micros();
 			float dt = (this_time - last_update_vel)/1000000.0f;	// Change in time since last valid packet (in seconds)
 			if( dt <= 0
-			    || (abs(_position_prev.x) < 1e-9 && abs(_position_prev.y) < 1e-9 && abs(_position_prev.z) < 1e-9)
 			    || (abs(_position.x) < 1e-9 && abs(_position.y) < 1e-9 && abs(_position.z) < 1e-9 ))
 			{
 				// First time through or just lost connection (position zeroed)
@@ -237,13 +254,14 @@ void Vicon::analyze_packet()
 				_velocity.x = (dx / dt) / 10.0f;
 				_velocity.y = (dy / dt) / 10.0f;
 				_velocity.z = (dz / dt) / 10.0f;
+
+				// Update previous position (still in mm)
+				_position_prev.x = _position.x;
+				_position_prev.y = _position.y;
+				_position_prev.z = _position.z;
+
 				last_update_vel = hal.scheduler->micros();
 			}
-
-			// Update previous position (still in mm)
-			_position_prev.x = _position.x;
-			_position_prev.y = _position.y;
-			_position_prev.z = _position.z;
 
 			// Sanity check on velocity (zero out unreasonably high velocities)
 			if(_velocity.x > VICON_VEL_THRESHOLD || _velocity.x < -VICON_VEL_THRESHOLD) { _velocity.x = 0; hal.console->println("\n\nKILLING X VELOCITY!");}
