@@ -44,6 +44,7 @@
 #include <AP_RangeFinder.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+//extern const AP_HAL::HAL& hal;
 
 // INS and Baro declaration
 AP_InertialSensor ins;
@@ -57,9 +58,10 @@ Compass compass;
 AP_GPS gps;
 AP_Baro baro;
 AP_SerialManager serial_manager;
+Vicon vicon;
 
 // choose which AHRS system to use
-AP_AHRS_DCM  ahrs(ins, baro, gps);
+AP_AHRS_DCM  ahrs(ins, baro, gps, &vicon);
 
 
 

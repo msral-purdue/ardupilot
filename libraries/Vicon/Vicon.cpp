@@ -5,7 +5,6 @@
  *      Author: DRM
  */
 
-
 #include <AP_HAL.h>
 #include <Vicon.h>
 
@@ -29,10 +28,11 @@ Vicon::Vicon() :
 
 void Vicon::initialize(void)
 {
-	uint8_t ignore;
+	//uint8_t ignore;
 	while(XBEE->available() > 0)
 	{
-		ignore =  XBEE->read();	// Clear out all data on Rx line
+		//ignore = originally
+		XBEE->read();	// Clear out all data on Rx line
 	}
 }
 
@@ -40,10 +40,10 @@ void Vicon::initialize(void)
 // calling at same frequency of the vicon system, or slightly faster
 bool Vicon::read_packet()
 {
-	uint8_t count = 0;
+	//uint8_t count = 0;
 	while(XBEE->available() > 0 && i_read < VICON_PACKET_LENGTH) // Limit # of read attempts per function call
 	{
-		count = XBEE->available();
+		//count = XBEE->available();
 		buffer[i_read] = XBEE->read();		// Read byte
 		//hal.console->printf("Received (%d bytes): '%c'\n",count, (char) buffer[i_read]);
 		if(buffer[i_read] == VICON_MSG_IGNORE) // Ignore any packets containing 'invalid-packet' character
@@ -132,7 +132,7 @@ void Vicon::analyze_packet()
 	uint8_t signX, signY, signZ, signYaw;
 	uint8_t signVX, signVY, signVZ;
 	uint16_t tmpX, tmpY, tmpZ, tmpYaw;	/* 	register stores absolute position in 1 mm	*/
-	uint16_t tmpVX, tmpVY, tmpVZ;
+	//uint16_t tmpVX, tmpVY, tmpVZ;
 	int16_t yaw_sensor = 0; 				// Added to fix compile errors
 
 	head = buffer[0];
@@ -153,9 +153,9 @@ void Vicon::analyze_packet()
 	tmpX   = buffer[3] << 8 | buffer[4];
 	tmpY   = buffer[6] << 8 | buffer[7];
 	tmpZ   = buffer[9] << 8 | buffer[10];
-	tmpVX  = buffer[12] << 8 | buffer[13];
-	tmpVY  = buffer[15] << 8 | buffer[16];
-	tmpVZ  = buffer[18] << 8 | buffer[19];
+	//tmpVX  = buffer[12] << 8 | buffer[13];
+	//tmpVY  = buffer[15] << 8 | buffer[16];
+	//tmpVZ  = buffer[18] << 8 | buffer[19];
 	tmpYaw = buffer[21] << 8 | buffer[22];
 
 	// for debug
@@ -219,8 +219,8 @@ void Vicon::analyze_packet()
 			uint32_t this_time = hal.scheduler->micros();
 			float dt = (this_time - last_update_vel)/1000000.0f;	// Change in time since last valid packet (in seconds)
 			if( dt <= 0
-			    || (_position_prev.x == 0 && _position_prev.y == 0 && _position_prev.z == 0)
-			    || (_position.x == 0 && _position.y == 0 && _position.z == 0) )
+			    || (abs(_position_prev.x) < 1e-9 && abs(_position_prev.y) < 1e-9 && abs(_position_prev.z) < 1e-9)
+			    || (abs(_position.x) < 1e-9 && abs(_position.y) < 1e-9 && abs(_position.z) < 1e-9 ))
 			{
 				// First time through or just lost connection (position zeroed)
 				_velocity.x = 0; _velocity.y = 0; _velocity.z = 0;

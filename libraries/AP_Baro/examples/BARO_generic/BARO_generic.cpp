@@ -67,7 +67,7 @@ void loop()
     if((hal.scheduler->micros() - timer) > 20*1000UL) {
         timer = hal.scheduler->micros();
         barometer.accumulate();
-        if (counter++ < 5) {
+        if (counter++ < 10) {
             return;
         }
         counter = 0;

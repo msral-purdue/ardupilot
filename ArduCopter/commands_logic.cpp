@@ -23,7 +23,7 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
         do_nav_wp(cmd);
         break;
 
-    case MAV_CMD_NAV_LAND:              // 21 LAND to Waypoint
+    case MAV_CMD_NAV_LAND:             			// 21 LAND to Waypoint
         do_land(cmd);
         break;
 
