@@ -4767,7 +4767,8 @@ bool NavEKF::getVehicleArmStatus(void) const
 // return true if we should use the compass
 bool NavEKF::use_compass(void) const
 {
-    return _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw();
+    //return _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw();
+    return !(_vicon->get_vicon_status()) && _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw();
 }
 
 // decay GPS horizontal position offset to close to zero at a rate of 1 m/s for copters and 5 m/s for planes

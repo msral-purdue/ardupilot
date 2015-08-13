@@ -335,6 +335,10 @@ Vector3f Vicon::getPosNEU() const
 	// If Vicon X is north, Vicon Y is West
 	Vector3f _position_NEU = _position;
 	_position_NEU.y = -_position.y;
+
+	// DEBUG: Negate XY for position hold (account for 'home' position)
+	_position_NEU.x = -_position_NEU.x;
+	_position_NEU.y = -_position_NEU.y;
 	return _position_NEU;
 }
 
@@ -344,5 +348,9 @@ Vector3f Vicon::getVelNEU() const
 	// If Vicon X is north, Vicon Y is West
 	Vector3f _velocity_NEU = _velocity;
 	_velocity_NEU.y = -_velocity.y;
+
+	// DEBUG: Negate XY for position hold (account for 'home' position)
+	_velocity_NEU.x = -_velocity_NEU.x;
+	_velocity_NEU.y = -_velocity_NEU.y;
 	return _velocity_NEU;
 }

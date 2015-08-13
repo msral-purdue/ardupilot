@@ -55,12 +55,15 @@ void Copter::userhook_SuperSlowLoop()
 
 	// DEBUG print vicon status information to usb console
 	if(vicon.vicon_status) {
+		Vector3f vel = vicon.getVelNEU();
 		hal.console->printf("\n\nVICON connected (%d msgs)!\n",msgs);
 		hal.console->printf("ID: %c\n",vicon.get_ID());
 		hal.console->printf("Position (in cm): (%.2f,%.2f,%.2f)\n",
 						   vicon.get_x(),vicon.get_y(),vicon.get_z());
 		hal.console->printf("Velocity (in cm/s): (%.2f,%.2f,%.2f)\n",
 								   vicon.get_Vx(),vicon.get_Vy(),vicon.get_Vz());
+		hal.console->printf("NEU Velocity (in cm/s): (%.2f,%.2f,%.2f)\n",
+										   vel.x,vel.y,vel.z);
 		hal.console->printf("Yaw (in radians): %.3f\n",vicon.get_yaw());
 	} else {
 		hal.console->printf("\n\nVICON disconnected...(%d msgs)\n",vicon.vicon_success_count);
