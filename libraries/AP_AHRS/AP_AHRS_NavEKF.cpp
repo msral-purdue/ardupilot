@@ -78,6 +78,12 @@ void AP_AHRS_NavEKF::update(void)
 
     AP_AHRS_DCM::update();
 
+    // DEBUG -- last-ditch attempt at setting yaw
+    if(EKF.getViconStatus())
+    {
+		yaw = EKF.getVicon()->get_yaw();	// DEBUG will this overwrite yaw for everything?
+    }
+
     // keep DCM attitude available for get_secondary_attitude()
     _dcm_attitude(roll, pitch, yaw);
 
@@ -147,6 +153,12 @@ void AP_AHRS_NavEKF::update(void)
             } else {
                 _accel_ef_ekf_blended = _accel_ef_ekf[0];
             }
+        }
+
+        // DEBUG -- last-ditch attempt at setting yaw
+        if(EKF.getViconStatus())
+        {
+    		yaw = EKF.getVicon()->get_yaw();	// DEBUG will this overwrite yaw for everything?
         }
     }
 }
