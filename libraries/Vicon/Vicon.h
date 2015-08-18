@@ -15,15 +15,15 @@
 #include <AP_Math.h>
 #include <string.h>
 
-#define VICON_TRANSLATION_RANGE				35000	/* in 0.01 cm */
+#define VICON_TRANSLATION_RANGE				3500	/* in 1 mm */
 #define VICON_ORIENTATION_RANGE				18000	/* in 0.01 deg */
-#define VICON_PACKET_LENGTH					24   	/* head ID X Y Z VX VY VZ Yaw tail */
+#define VICON_PACKET_LENGTH					21   	/* head ID X Y Z Roll Pitch Yaw tail */
 #define VICON_MSG_BUFFER_SIZE				256		/* Size of Vicon msg Rx buffer*/
 #define VICON_MSG_BEGIN						'$'		/* 'Begin-message' character */
 #define VICON_MSG_END						'&'		/* 'End-of-message' character */
 #define VICON_MSG_IGNORE					'#'		/* 'Invalid-packet' character */
 #define VICON_VEL_HZ						10		/* Rate at which to update velocity calculation */
-#define VICON_VEL_THRESHOLD					20000	/* Maximum reasonable velocity */
+#define VICON_VEL_THRESHOLD					20000	/* Maximum reasonable velocity (in cm/s) */
 
 // Use SERIAL4 (UartE) for XBee/Vicon communication
 #define XBEE	hal.uartE
@@ -46,15 +46,22 @@ public:
 
 	bool 		get_vicon_status() const { return vicon_status; }	//return vicon status
 	char		get_ID() const { return ID; }
-	float       get_x() const { return _position.x; }	//return x in cm
-	float       get_y() const { return _position.y; }	//return y in cm
-	float       get_z() const { return _position.z; }	//return z in cm
-	float       get_Vx() const { return _velocity.x; }	//return Vx in cm/s
-	float       get_Vy() const { return _velocity.y; }	//return Vy in cm/s
-	float       get_Vz() const { return _velocity.z; }	//return Vz in cm/s
-	float 		get_yaw(void) const { return yaw; }		//return heading in radians
+	float       get_x() const { return _position.x; }	//return x in cm (NED frame)
+	float       get_y() const { return _position.y; }	//return y in cm (NED frame)
+	float       get_z() const { return _position.z; }	//return z in cm (NED frame)
+	float       get_Vx() const { return _velocity.x; }	//return Vx in cm/s (NED frame)
+	float       get_Vy() const { return _velocity.y; }	//return Vy in cm/s (NED frame)
+	float       get_Vz() const { return _velocity.z; }	//return Vz in cm/s (NED frame)
+	float 		get_roll(void) const { return roll; }	//return roll in radians (NED frame)
+	float 		get_pitch(void) const { return pitch; }	//return pitch in radians (NED frame)
+	float 		get_yaw(void) const { return yaw; }		//return heading in radians (NED frame)
+	Vector3f	getPosNED() const { return _position; }; // return x,y,z in cm (in NED frame)
+	Vector3f    getVelNED() const { return _velocity; }; // return Vx,Vy,Vz in cm/s (in NED frame)
 	Vector3f	getPosNEU() const; // return x,y,z in cm (in NEU frame)
-	Vector3f	getVelNEU() const; // return x,y,z in cm (in NEU frame)
+	Vector3f	getVelNEU() const; // return Vx,Vy,Vz in cm/s (in NEU frame)
+
+	void reset_debug_count(void);	// Resets all debug counters to 0
+	void print_debug_count(void);	// Print debug counter values to console
 
 
 private:
@@ -62,21 +69,32 @@ private:
 	uint32_t last_update_vel;	// Time since last velocity update in microseconds
 	bool reset_prev_pos;
 
-	// Vicon Data
+	// Vicon Data (stored in NED frame)
 	char		ID;
 	Vector3f    _position; 		// position in 0.01 cm
 	Vector3f	_position_prev;	// previous position (in mm), to calculate velocity
 	Vector3f	_velocity;  	// velocity (Added by Daniel July 15 to fix compile errors)
+	float roll;					// roll in radians
+	float pitch; 				// pitch in radians
 	float yaw;					// heading in radians
 
 	// Message handling
 	void reset_buffer(void);
 	uint8_t vicon_fail_count;
 	uint8_t buffer[VICON_MSG_BUFFER_SIZE];
+	uint8_t ignored[VICON_MSG_BUFFER_SIZE];
 	uint8_t packet_length;
 	uint8_t i_read;				// Index of next message byte in buffer
 	bool msgStarted; 			// True if read_packet() is in the middle of receiving a message
 
+	// Debug counters
+	int msgDrop_IGNORE;
+	int msgDrop_BAD_LENGTH;
+	int msgDrop_TOO_MANY_TRIES;
+	int msgDrop_TRANS_OUT_OF_RANGE;
+	int msgDrop_INVALID;
+	int msgStartCount;
+	int msg_incomplete;
 };
 
 #endif /* __VICON_H__ */

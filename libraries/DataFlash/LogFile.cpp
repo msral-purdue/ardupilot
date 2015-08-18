@@ -741,6 +741,29 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relati
 #endif
 }
 
+// Write a Vicon packet
+void DataFlash_Class::Log_Write_Vicon(const Vicon &vicon)
+{
+	const Vector3f &pos = vicon.getPosNED();
+	const Vector3f &vel = vicon.getVelNED();
+	struct log_Vicon pkt = {
+		LOG_PACKET_HEADER_INIT(LOG_VICON_MSG),
+		time_us       : hal.scheduler->micros64(),
+		status        : (uint8_t)vicon.vicon_status,
+		success_count : vicon.vicon_success_count,
+		posN	      : pos.x,
+		posE	      : pos.y,
+		posD	      : pos.z,
+		velN	      : vel.x,
+		velE	      : vel.y,
+		velD	      : vel.z,
+		roll		  : vicon.get_roll(),
+		pitch		  : vicon.get_pitch(),
+		yaw			  : vicon.get_yaw()
+	};
+	WriteBlock(&pkt, sizeof(pkt));
+}
+
 // Write an RCIN packet
 void DataFlash_Class::Log_Write_RCIN(void)
 {

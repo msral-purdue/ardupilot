@@ -67,6 +67,7 @@ public:
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
+    void Log_Write_Vicon(const Vicon &vicon);
     void Log_Write_IMU(const AP_InertialSensor &ins);
     void Log_Write_IMUDT(const AP_InertialSensor &ins);
     void Log_Write_Vibration(const AP_InertialSensor &ins);
@@ -184,6 +185,15 @@ struct PACKED log_GPS {
     uint32_t ground_speed;
     int32_t  ground_course;
     float    vel_z;
+};
+
+struct PACKED log_Vicon {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t  status, success_count;
+	float posN, posE, posD;
+    float velN, velE, velD;
+	float roll, pitch, yaw;
 };
 
 struct PACKED log_GPS2 {
@@ -648,6 +658,8 @@ Format characters in the format string for binary log messages
       "PARM", "QNf",        "TimeUS,Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "QBIHBcLLeeEef", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ" }, \
+	{ LOG_VICON_MSG, sizeof(log_Vicon), \
+	  "VIC",  "QBBfffffffff", "TimeUS,Status,Pkts,PosN,PosE,PosD,VelN,VelE,VelD,Roll,Pitch,Yaw" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
@@ -783,6 +795,7 @@ enum LogMessages {
     LOG_FORMAT_MSG = 128,
     LOG_PARAMETER_MSG,
     LOG_GPS_MSG,
+	LOG_VICON_MSG,
     LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,

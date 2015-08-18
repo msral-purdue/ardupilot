@@ -62,17 +62,22 @@ void AP_AHRS_NavEKF::reset_gyro_drift(void)
     EKF.resetGyroBias();
 }
 
+//static uint32_t DEBUG_TIME = 0; // DEBUG
 void AP_AHRS_NavEKF::update(void)
 {
     // we need to restore the old DCM attitude values as these are
     // used internally in DCM to calculate error values for gyro drift
     // correction
-    roll = _dcm_attitude.x;
-    pitch = _dcm_attitude.y;
-    if(EKF.getViconStatus())
+	roll = _dcm_attitude.x;
+	pitch = _dcm_attitude.y;
+    if(EKF.getViconStatus()) {
+    	//roll = EKF.getVicon()->get_roll();
+    	//pitch = EKF.getVicon()->get_pitch();
 		yaw = EKF.getVicon()->get_yaw();	// DEBUG will this overwrite yaw for everything?
-    else
+    }
+    else {
         yaw = _dcm_attitude.z;
+    }
 
     update_cd_values();
 
@@ -96,12 +101,30 @@ void AP_AHRS_NavEKF::update(void)
         if (using_EKF()) {
             Vector3f eulers;
             EKF.getEulerAngles(eulers);
+
+            // roll,pitch & yaw of body frame (FRD) w.r.t. NED frame
             roll  = eulers.x;
             pitch = eulers.y;
-            if(EKF.getViconStatus())
+            if(EKF.getViconStatus()) {
+            	//roll = EKF.getVicon()->get_roll();
+				//pitch = EKF.getVicon()->get_pitch();
             	yaw = EKF.getVicon()->get_yaw();	// DEBUG will this overwrite yaw for everything?
-            else
+            }
+			else {
                 yaw   = eulers.z;
+			}
+
+            // DEBUG: Verify roll,pitch,yaw are set properly
+            /*
+            if(hal.scheduler->micros()-DEBUG_TIME > 1000000)
+			{
+            	hal.console->printf("\n\nACTUAL Roll: %.3f, Pitch: %.3f, Yaw: %.3f\n",roll,pitch,yaw);
+            	hal.console->printf("VICON  Roll: %.3f, Pitch: %.3f, Yaw: %.3f\n\n",\
+            						EKF.getVicon()->get_roll(),EKF.getVicon()->get_pitch(),\
+									EKF.getVicon()->get_yaw());
+            	DEBUG_TIME = hal.scheduler->micros();
+			}
+            */
 
             update_cd_values();
             update_trig();

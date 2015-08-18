@@ -21,6 +21,12 @@ void Copter::userhook_FastLoop()
 {
     // put your 100Hz code here
 	vicon.read_packet();
+
+	// Log Vicon message in place of GPS
+	if (should_log(MASK_LOG_GPS))
+	{
+		DataFlash.Log_Write_Vicon(vicon);	// Save to log file
+	}
 }
 #endif
 
@@ -57,16 +63,20 @@ void Copter::userhook_SuperSlowLoop()
 	if(vicon.vicon_status) {
 		Vector3f vel = vicon.getVelNEU();
 		hal.console->printf("\n\nVICON connected (%d msgs)!\n",msgs);
-		hal.console->printf("ID: %c\n",vicon.get_ID());
-		hal.console->printf("Position (in cm): (%.2f,%.2f,%.2f)\n",
+		hal.console->printf("ID: %c\t",vicon.get_ID());
+		hal.console->printf("Pos (cm): (%.2f,%.2f,%.2f)\t",
 						   vicon.get_x(),vicon.get_y(),vicon.get_z());
-		hal.console->printf("Velocity (in cm/s): (%.2f,%.2f,%.2f)\n",
+		hal.console->printf("Vel (cm/s): (%.2f,%.2f,%.2f)\n",
 								   vicon.get_Vx(),vicon.get_Vy(),vicon.get_Vz());
-		hal.console->printf("NEU Velocity (in cm/s): (%.2f,%.2f,%.2f)\n",
-										   vel.x,vel.y,vel.z);
-		hal.console->printf("Yaw (in radians): %.3f\n",vicon.get_yaw());
+		hal.console->printf("R (rad): %.3f\t",vicon.get_roll());
+		hal.console->printf("P (rad): %.3f\t",vicon.get_pitch());
+		hal.console->printf("Y (rad): %.3f\n\n",vicon.get_yaw());
 	} else {
-		hal.console->printf("\n\nVICON disconnected...(%d msgs)\n",vicon.vicon_success_count);
+		hal.console->printf("\n\nVICON disconnected...(%d msgs)\n\n",vicon.vicon_success_count);
 	}
+
+	vicon.print_debug_count();	// Print out debug counters
+	vicon.reset_debug_count();	// Reset the debug counters
+
 }
 #endif

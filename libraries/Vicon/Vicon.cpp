@@ -20,11 +20,20 @@ Vicon::Vicon() :
 		_position(0.0f,0.0f,0.0f),
 		_position_prev(0.0f,0.0f,0.0f),
 		_velocity(0.0f,0.0f,0.0f),
+		roll(0.0f),
+		pitch(0.0f),
 		yaw(0.0f),
 		vicon_fail_count(0),
 		packet_length(0),
 		i_read(0),
-		msgStarted(false)
+		msgStarted(false),
+		msgDrop_IGNORE(0),
+		msgDrop_BAD_LENGTH(0),
+		msgDrop_TOO_MANY_TRIES(0),
+		msgDrop_TRANS_OUT_OF_RANGE(0),
+		msgDrop_INVALID(0),
+		msgStartCount(0),
+		msg_incomplete(0)
 { }
 
 void Vicon::initialize(void)
@@ -47,8 +56,9 @@ bool Vicon::read_packet()
 		//count = XBEE->available();
 		buffer[i_read] = XBEE->read();		// Read byte
 		//hal.console->printf("Received (%d bytes): '%c'\n",count, (char) buffer[i_read]);
-		if(buffer[i_read] == VICON_MSG_IGNORE) // Ignore any packets containing 'invalid-packet' character
+		if(!msgStarted && buffer[i_read] == VICON_MSG_IGNORE) // Ignore any packets starting with 'invalid-packet' character
 		{
+			i_read++;
 			while(XBEE->available() > 0 && i_read < VICON_PACKET_LENGTH)
 			{
 				// Ignore remaining, consecutive,  'invalid-packet' characters
@@ -59,10 +69,14 @@ bool Vicon::read_packet()
 				{ i_read++; }
 			}
 
-			//hal.console->println("Received ignore character... ignoring whole packet!");
-			// Reset buffer
-			reset_buffer();
-			return false;
+			if(i_read >= VICON_PACKET_LENGTH)
+			{
+				//hal.console->println("Received full packet of ignore characters...");
+				// Reset buffer
+				reset_buffer();
+				msgDrop_IGNORE++;
+				return false;
+			}
 		}
 
 		if(!msgStarted)
@@ -70,8 +84,13 @@ bool Vicon::read_packet()
 		 	if(buffer[i_read] == VICON_MSG_BEGIN) // Check for start of message
 		 	{
 				msgStarted = true;
+				msgStartCount++;
 				buffer[0] = VICON_MSG_BEGIN;	// Begin message in buffer
 				i_read = 1;						// Reset message position index
+		 	}
+		 	else // ignore non-start characters
+		 	{
+		 		i_read++;
 		 	}
 		}
 		else // continue message
@@ -84,12 +103,14 @@ bool Vicon::read_packet()
 					analyze_packet();	// Process packet information
 					return true;		// Return success
 				}
-				else	// 'End-of-message' char came too early -> msg is invalid
+				else	// 'End-of-message' char came too early ... could be part of a number
 				{
 					//hal.console->println("End of message came too early!");
 					// Reset buffer
-					reset_buffer();
-					return false;
+					// reset_buffer();
+					// msgDrop_BAD_LENGTH++;
+					// return false;
+					i_read++;
 				}
 			}
 			else
@@ -97,18 +118,20 @@ bool Vicon::read_packet()
 				i_read++; 	// increment read counter
 			}
 		}
-	}
+	} // End while XBEE->available() > 0 && i_read < VICON_PACKET_LENGTH
 
-	if(i_read >= VICON_PACKET_LENGTH)
+	if(i_read >= VICON_PACKET_LENGTH) // Didn't find end of packet
 	{
 		//hal.console->println("read_packet(): Tried too many times...");
 		reset_buffer();
+		msgDrop_TOO_MANY_TRIES++;
 	}
 	else
 	{
 		//hal.console->println("read_packet(): Nothing to read!");
 	}
 
+	msg_incomplete++;
 	return false;		// Didn't receive a complete message
 }
 
@@ -125,16 +148,18 @@ void Vicon::reset_buffer(void)
 }
 
 /*************************************************************************************************/
-/* head ID X Y Z VX VY VZ Yaw tail */
-/* X,Y,Z sent as mm and VX,VY,VZ as mm/s, Yaw in units of .01 degrees */
+/* head ID X Y Z Roll Pitch Yaw tail */
+/* X,Y,Z sent as mm, Roll/Pitch/Yaw in units of .01 degrees */
 void Vicon::analyze_packet()
 {
     uint8_t head, tail, ID_in;
-	uint8_t signX, signY, signZ, signYaw;
-	uint8_t signVX, signVY, signVZ;
-	uint16_t tmpX, tmpY, tmpZ, tmpYaw;	/* 	register stores absolute position in 1 mm	*/
-	//uint16_t tmpVX, tmpVY, tmpVZ;
-	int16_t yaw_sensor = 0; 				// Added to fix compile errors
+	uint8_t signX, signY, signZ;
+	uint8_t signRoll, signPitch, signYaw;
+	uint16_t tmpX, tmpY, tmpZ;
+	uint16_t tmpRoll, tmpPitch, tmpYaw;
+	int16_t roll_sensor = 0;
+	int16_t pitch_sensor = 0;
+	int16_t yaw_sensor = 0;
 
 	head = buffer[0];
 	tail = buffer[VICON_PACKET_LENGTH-1];
@@ -145,19 +170,17 @@ void Vicon::analyze_packet()
 	signX = buffer[2];
 	signY = buffer[5];
 	signZ = buffer[8];
-	signVX = buffer[11];
-	signVY = buffer[14];
-	signVZ = buffer[17];
-	signYaw = buffer[20];
+	signRoll = buffer[11];
+	signPitch = buffer[14];
+	signYaw = buffer[17];
 
 	// transfer two 8-bit bytes into a 16-bit value
 	tmpX   = buffer[3] << 8 | buffer[4];
 	tmpY   = buffer[6] << 8 | buffer[7];
 	tmpZ   = buffer[9] << 8 | buffer[10];
-	//tmpVX  = buffer[12] << 8 | buffer[13];
-	//tmpVY  = buffer[15] << 8 | buffer[16];
-	//tmpVZ  = buffer[18] << 8 | buffer[19];
-	tmpYaw = buffer[21] << 8 | buffer[22];
+	tmpRoll = buffer[12] << 8 | buffer[13];
+	tmpPitch = buffer[15] << 8 | buffer[16];
+	tmpYaw = buffer[18] << 8 | buffer[19];
 
 	// for debug
 	//hal.uartA->printf_P(PSTR("head %c "),head);
@@ -172,10 +195,10 @@ void Vicon::analyze_packet()
 	//hal.uartA->printf(" P %u %u %u %u %u %u %u",tmpX,tmpY,tmpZ,tmpVX,tmpVY,tmpVZ,tmpYaw);
 
 	// check if packet is valid
-	if( head == '$' && tail == '&' && (signX == '+' || signX == '-') &&
+	if( head == VICON_MSG_BEGIN && tail == VICON_MSG_END && (signX == '+' || signX == '-') &&
 		(signY == '+' || signY == '-') && (signZ == '+' || signZ == '-') &&
-		(signVX == '+' || signVX == '-') && (signVY == '+' || signVY == '-') &&
-		(signVZ == '+' || signVZ == '-') )
+		(signRoll == '+' || signRoll == '-') && (signPitch == '+' || signPitch == '-') &&
+		(signYaw == '+' || signYaw == '-') )
 	{
 
 		// Check for zero position
@@ -200,24 +223,18 @@ void Vicon::analyze_packet()
 			if(signZ == '+')
 				_position.z = (float)tmpZ;
 			else if(signZ == '-')
-				_position.z = (float)(-tmpZ);
+				_position.z = -(float)(tmpZ);
 
-			/* No longer transmitting velocity (calculating onboard)
-			if(signVX == '+')
-				_velocity.x = (float)tmpVX;
-			else if(signVX == '-')
-				_velocity.x = (float)(-tmpVX);
+			if(signRoll == '+')
+				roll_sensor = (int16_t)tmpRoll;
+			else if(signRoll == '-')
+				roll_sensor = -(int16_t)(tmpRoll);
 
-			if(signVY == '+')
-				_velocity.y = (float)tmpVY;
-			else if(signVY == '-')
-				_velocity.y = (float)(-tmpVY);
+			if(signPitch == '+')
+				pitch_sensor = (int16_t)tmpPitch;
+			else if(signPitch == '-')
+				pitch_sensor = -(int16_t)(tmpPitch);
 
-			if(signVZ == '+')
-				_velocity.z = (float)tmpVZ;
-			else if(signVZ == '-')
-				_velocity.z = (float)(-tmpVZ);
-			 */
 			if(signYaw == '+')
 				yaw_sensor = (int16_t)tmpYaw;
 			else if(signYaw == '-')
@@ -255,7 +272,7 @@ void Vicon::analyze_packet()
 				_velocity.y = (dy / dt) / 10.0f;
 				_velocity.z = (dz / dt) / 10.0f;
 
-				// Update previous position (still in mm)
+				// Update previous position (position still in mm)
 				_position_prev.x = _position.x;
 				_position_prev.y = _position.y;
 				_position_prev.z = _position.z;
@@ -268,12 +285,14 @@ void Vicon::analyze_packet()
 			if(_velocity.y > VICON_VEL_THRESHOLD || _velocity.y < -VICON_VEL_THRESHOLD) { _velocity.y = 0; hal.console->println("\n\nKILLING Y VELOCITY!");}
 			if(_velocity.z > VICON_VEL_THRESHOLD || _velocity.z < -VICON_VEL_THRESHOLD) { _velocity.z = 0; hal.console->println("\n\nKILLING Z VELOCITY!");}
 
-			/* Convert from 1 mm to cm, int16_t to float	*/
+			/* Convert from 1 mm to cm, int16_t to float */
 			_position.x = _position.x / 10.0f;
 			_position.y = _position.y / 10.0f;
 			_position.z = _position.z / 10.0f;
 
 			/* Convert from .01 deg to radians */
+			roll = radians( roll_sensor * 0.01f);
+			pitch = radians( pitch_sensor * 0.01f);
 			yaw = radians( yaw_sensor * 0.01f);
 
 			//hal.uartA->printf_P(PSTR(" P %f %f %f %d "), _position.x, _position.y, _position.z, yaw_sensor);
@@ -284,9 +303,14 @@ void Vicon::analyze_packet()
 			// flag of valid packet
 			vicon_success_count++;
 		}
+		else
+		{
+			msgDrop_TRANS_OUT_OF_RANGE++;
+		}
 	}
 	else // Invalid data packet received (zero out velocity)
 	{
+		msgDrop_INVALID++;
 		_velocity.x = 0.0;
 		_velocity.y = 0.0;
 		_velocity.z = 0.0;
@@ -332,25 +356,48 @@ uint8_t Vicon::check_vicon_status()	//1 Hz
 // return x,y,z in cm (in NEU frame)
 Vector3f Vicon::getPosNEU() const
 {
-	// If Vicon X is north, Vicon Y is West
+	// Vicon XYZ pos. is stored in NED...just need to negate Z
 	Vector3f _position_NEU = _position;
-	_position_NEU.y = -_position.y;
+	_position_NEU.z = -1 * _position_NEU.z;
 
 	// DEBUG: Negate XY for position hold (account for 'home' position)
-	_position_NEU.x = -_position_NEU.x;
-	_position_NEU.y = -_position_NEU.y;
+	_position_NEU.x = -1 * _position_NEU.x;
+	_position_NEU.y = -1 * _position_NEU.y;
 	return _position_NEU;
 }
 
 // return x,y,z in cm (in NEU frame)
 Vector3f Vicon::getVelNEU() const
 {
-	// If Vicon X is north, Vicon Y is West
+	// Vicon XYZ vel. is stored in NED...just need to negate Z
 	Vector3f _velocity_NEU = _velocity;
-	_velocity_NEU.y = -_velocity.y;
+	_velocity_NEU.z = -1 * _velocity_NEU.z;
 
 	// DEBUG: Negate XY for position hold (account for 'home' position)
-	_velocity_NEU.x = -_velocity_NEU.x;
-	_velocity_NEU.y = -_velocity_NEU.y;
+	_velocity_NEU.x = -1 * _velocity_NEU.x;
+	_velocity_NEU.y = -1 * _velocity_NEU.y;
 	return _velocity_NEU;
+}
+
+// Reset all packet reading debug counters
+void Vicon::reset_debug_count(void)
+{
+	msgDrop_IGNORE = 0;
+	msgDrop_BAD_LENGTH = 0;
+	msgDrop_TOO_MANY_TRIES = 0;
+	msgDrop_TRANS_OUT_OF_RANGE = 0;
+	msgDrop_INVALID = 0;
+	msgStartCount = 0;
+	msg_incomplete = 0;
+}
+
+void Vicon::print_debug_count(void)
+{
+	hal.console->printf("\n\nmsgDrop_IGNORE: %d\nmsgDrop_BAD_LENGTH: %d\n\
+						msgDrop_TOO_MANY_TRIES: %d\nmsgDrop_INVALID: %d\n\
+						\nmsgDrop_TRANS_OUT_OF_RANGE: %d\nmsgStartCount: %d\
+			            \nmsg_incomplete: %d\n\n",msgDrop_IGNORE,\
+						msgDrop_BAD_LENGTH,msgDrop_TOO_MANY_TRIES,\
+						msgDrop_INVALID,msgDrop_TRANS_OUT_OF_RANGE,\
+						msgStartCount,msg_incomplete);
 }
