@@ -24,6 +24,7 @@
 #define VICON_MSG_IGNORE					'#'		/* 'Invalid-packet' character */
 #define VICON_VEL_HZ						10		/* Rate at which to update velocity calculation */
 #define VICON_VEL_THRESHOLD					20000	/* Maximum reasonable velocity (in cm/s) */
+#define VICON_ID_DEFAULT         			0		/* Index in Vicon data array */
 
 // Use SERIAL4 (UartE) for XBee/Vicon communication
 #define XBEE	hal.uartE
@@ -46,23 +47,27 @@ public:
 
 	bool 		get_vicon_status() const { return vicon_status; }	//return vicon status
 	char		get_ID() const { return ID; }
-	float       get_x() const { return _position.x; }	//return x in cm (NED frame)
-	float       get_y() const { return _position.y; }	//return y in cm (NED frame)
-	float       get_z() const { return _position.z; }	//return z in cm (NED frame)
-	float       get_Vx() const { return _velocity.x; }	//return Vx in cm/s (NED frame)
-	float       get_Vy() const { return _velocity.y; }	//return Vy in cm/s (NED frame)
-	float       get_Vz() const { return _velocity.z; }	//return Vz in cm/s (NED frame)
-	float 		get_roll(void) const { return roll; }	//return roll in radians (NED frame)
-	float 		get_pitch(void) const { return pitch; }	//return pitch in radians (NED frame)
-	float 		get_yaw(void) const { return yaw; }		//return heading in radians (NED frame)
-	Vector3f	getPosNED() const { return _position; }; // return x,y,z in cm (in NED frame)
-	Vector3f    getVelNED() const { return _velocity; }; // return Vx,Vy,Vz in cm/s (in NED frame)
-	Vector3f	getPosNEU() const; // return x,y,z in cm (in NEU frame)
-	Vector3f	getVelNEU() const; // return Vx,Vy,Vz in cm/s (in NEU frame)
+float       get_x() const { return _position.x; }			//return x in cm (NED frame)
+	float       get_y() const { return _position.y; }		//return y in cm (NED frame)
+	float       get_z() const { return _position.z; }		//return z in cm (NED frame)
+	float       get_Vx() const { return _velocity.x; }		//return Vx in cm/s (NED frame)
+	float       get_Vy() const { return _velocity.y; }		//return Vy in cm/s (NED frame)
+	float       get_Vz() const { return _velocity.z; }		//return Vz in cm/s (NED frame)
+	float 		get_roll(void) const { return roll; }		//return roll in radians (NED frame)
+	float 		get_pitch(void) const { return pitch; }		//return pitch in radians (NED frame)
+	float 		get_yaw(void) const { return yaw; }			//return heading in radians (NED frame)
+	float 		get_roll_d(void) const;						//return roll in degrees (NED frame)
+	float 		get_pitch_d(void) const;					//return pitch in degrees (NED frame)
+	float 		get_yaw_d(void) const;						//return heading in degrees (NED frame)
+	Vector3f	getPosNED() const { return _position; }; 	// return x,y,z in cm (in NED frame)
+	Vector3f    getVelNED() const { return _velocity; }; 	// return Vx,Vy,Vz in cm/s (in NED frame)
+	Vector3f	getPosNEU() const; 							// return x,y,z in cm (in NEU frame)
+	Vector3f	getVelNEU() const;					 		// return Vx,Vy,Vz in cm/s (in NEU frame)
+
+	static const struct AP_Param::GroupInfo var_info[];		// To enable Vicon parameters in GCS
 
 	void reset_debug_count(void);	// Resets all debug counters to 0
 	void print_debug_count(void);	// Print debug counter values to console
-
 
 private:
 	// Velocity Calculations
@@ -70,13 +75,16 @@ private:
 	bool reset_prev_pos;
 
 	// Vicon Data (stored in NED frame)
-	char		ID;
+	AP_Int8		ID;				// This vehicle's index in the Vicon data array (parameter)
 	Vector3f    _position; 		// position in 0.01 cm
 	Vector3f	_position_prev;	// previous position (in mm), to calculate velocity
 	Vector3f	_velocity;  	// velocity (Added by Daniel July 15 to fix compile errors)
 	float roll;					// roll in radians
 	float pitch; 				// pitch in radians
 	float yaw;					// heading in radians
+
+	// PARAMETER (Accessible from GCS)
+	//AP_Int8 vicon_id;			// Vicon id (index) parameter
 
 	// Message handling
 	void reset_buffer(void);

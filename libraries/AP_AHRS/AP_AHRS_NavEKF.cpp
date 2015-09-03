@@ -62,7 +62,7 @@ void AP_AHRS_NavEKF::reset_gyro_drift(void)
     EKF.resetGyroBias();
 }
 
-//static uint32_t DEBUG_TIME = 0; // DEBUG
+static uint32_t DEBUG_TIME = 0; // DEBUG
 void AP_AHRS_NavEKF::update(void)
 {
     // we need to restore the old DCM attitude values as these are
@@ -115,7 +115,7 @@ void AP_AHRS_NavEKF::update(void)
 			}
 
             // DEBUG: Verify roll,pitch,yaw are set properly
-            /*
+/*
             if(hal.scheduler->micros()-DEBUG_TIME > 1000000)
 			{
             	hal.console->printf("\n\nACTUAL Roll: %.3f, Pitch: %.3f, Yaw: %.3f\n",roll,pitch,yaw);
@@ -124,7 +124,7 @@ void AP_AHRS_NavEKF::update(void)
 									EKF.getVicon()->get_yaw());
             	DEBUG_TIME = hal.scheduler->micros();
 			}
-            */
+*/
 
             update_cd_values();
             update_trig();

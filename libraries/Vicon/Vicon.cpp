@@ -16,7 +16,6 @@ Vicon::Vicon() :
 		last_update(0),
 		last_update_vel(0),
 		reset_prev_pos(false),
-		ID(0),
 		_position(0.0f,0.0f,0.0f),
 		_position_prev(0.0f,0.0f,0.0f),
 		_velocity(0.0f,0.0f,0.0f),
@@ -165,7 +164,7 @@ void Vicon::analyze_packet()
 	tail = buffer[VICON_PACKET_LENGTH-1];
 
 	ID_in    = buffer[1];
-	ID = (char) ID_in;
+	//ID = (int) ID_in;
 
 	signX = buffer[2];
 	signY = buffer[5];
@@ -195,7 +194,7 @@ void Vicon::analyze_packet()
 	//hal.uartA->printf(" P %u %u %u %u %u %u %u",tmpX,tmpY,tmpZ,tmpVX,tmpVY,tmpVZ,tmpYaw);
 
 	// check if packet is valid
-	if( head == VICON_MSG_BEGIN && tail == VICON_MSG_END && (signX == '+' || signX == '-') &&
+	if( ((uint8_t) ID) == ID_in && head == VICON_MSG_BEGIN && tail == VICON_MSG_END && (signX == '+' || signX == '-') &&
 		(signY == '+' || signY == '-') && (signZ == '+' || signZ == '-') &&
 		(signRoll == '+' || signRoll == '-') && (signPitch == '+' || signPitch == '-') &&
 		(signYaw == '+' || signYaw == '-') )
@@ -308,6 +307,10 @@ void Vicon::analyze_packet()
 			msgDrop_TRANS_OUT_OF_RANGE++;
 		}
 	}
+	else if( ((uint8_t) ID) != ID_in)
+	{
+		// Ignore messages
+	}
 	else // Invalid data packet received (zero out velocity)
 	{
 		msgDrop_INVALID++;
@@ -379,6 +382,24 @@ Vector3f Vicon::getVelNEU() const
 	return _velocity_NEU;
 }
 
+//return roll in degrees (NED frame)
+float Vicon::get_roll_d(void) const
+{
+	return degrees(roll);
+}
+
+//return pitch in degrees (NED frame)
+float Vicon::get_pitch_d(void) const
+{
+	return degrees(pitch);
+}
+
+//return heading in degrees (NED frame)
+float Vicon::get_yaw_d(void) const
+{
+	return degrees(yaw);
+}
+
 // Reset all packet reading debug counters
 void Vicon::reset_debug_count(void)
 {
@@ -401,3 +422,16 @@ void Vicon::print_debug_count(void)
 						msgDrop_INVALID,msgDrop_TRANS_OUT_OF_RANGE,\
 						msgStartCount,msg_incomplete);
 }
+
+// Add Vicon ID parameter as a standard parameter (for access in GCS)
+const AP_Param::GroupInfo Vicon::var_info[] PROGMEM = {
+	// @Param: ID
+	// @DisplayName: Vicon ID
+	// @Description: This vehicle's index in the array of Vicon data
+	// @Range: 0 10
+	// @Increment: 1
+	// @User: Standard
+	AP_GROUPINFO("ID",    0, Vicon, ID, VICON_ID_DEFAULT),
+
+	AP_GROUPEND
+};

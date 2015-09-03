@@ -757,9 +757,9 @@ void DataFlash_Class::Log_Write_Vicon(const Vicon &vicon)
 		velN	      : vel.x,
 		velE	      : vel.y,
 		velD	      : vel.z,
-		roll		  : vicon.get_roll(),
-		pitch		  : vicon.get_pitch(),
-		yaw			  : vicon.get_yaw()
+		roll		  : vicon.get_roll_d(),
+		pitch		  : vicon.get_pitch_d(),
+		yaw			  : vicon.get_yaw_d()
 	};
 	WriteBlock(&pkt, sizeof(pkt));
 }

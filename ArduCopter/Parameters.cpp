@@ -1061,6 +1061,10 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(autotune_aggressiveness, "AUTOTUNE_AGGR", 0.1f),
 
+	// @Group: VICON_
+	// @Path: ../libraries/Vicon/Vicon.cpp
+	GOBJECT(vicon,        "VICON_", Vicon),
+
     AP_VAREND
 };
 
